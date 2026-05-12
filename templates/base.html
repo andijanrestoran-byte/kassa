@@ -251,6 +251,18 @@
             color: var(--muted);
             font-size: 0.84rem;
         }
+        .sidebar-user-meta {
+            flex: 1;
+            min-width: 0;
+        }
+        .sidebar-logout {
+            width: auto;
+            min-height: 40px;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.82rem;
+            white-space: nowrap;
+        }
         .main-shell {
             min-width: 0;
             padding: 28px;
@@ -789,10 +801,16 @@
             </div>
             <div class="sidebar-user">
                 <div class="sidebar-user-mark">{{ request.user.username|slice:":2"|upper }}</div>
-                <div class="sidebar-user-copy">
-                    <strong>{{ request.user.username }}</strong>
-                    <span>Xodim paneli</span>
+                <div class="sidebar-user-meta">
+                    <div class="sidebar-user-copy">
+                        <strong>{{ request.user.username }}</strong>
+                        <span>Xodim paneli</span>
+                    </div>
                 </div>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn secondary sidebar-logout">Chiqish</button>
+                </form>
             </div>
         </aside>
 {% endif %}

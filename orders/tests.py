@@ -81,6 +81,16 @@ class OrderFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
 
+    def test_cashier_can_logout_from_session(self):
+        logged_in = self.client.login(username="kassir_test", password="TestPass123!")
+        self.assertTrue(logged_in)
+
+        response = self.client.post(reverse("logout"))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("login"))
+        self.assertNotIn("_auth_user_id", self.client.session)
+
     @override_settings(
         ALLOWED_HOSTS=["demo.up.railway.app"],
         CSRF_TRUSTED_ORIGINS=["https://demo.up.railway.app"],
