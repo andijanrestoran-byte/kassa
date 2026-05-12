@@ -327,7 +327,7 @@ class OrderDetailView(APIView):
 
 
 class RejectOrderView(APIView):
-    permission_classes = [IsDirector]
+    permission_classes = [IsDirectorOrCashier]
 
     def post(self, request, order_id):
         serializer = RejectCancelSerializer(data=request.data)
@@ -471,14 +471,14 @@ class PaymentDetailView(APIView):
 
 
 class DashboardSummaryView(APIView):
-    permission_classes = [IsDirector]
+    permission_classes = [IsDirectorOrCashier]
 
     def get(self, request):
         return Response(build_dashboard_summary())
 
 
 class WaitersOverviewView(APIView):
-    permission_classes = [IsDirector]
+    permission_classes = [IsDirectorOrCashier]
 
     def get(self, request):
         waiters = User.objects.filter(profile__role=UserProfile.Role.WAITER).select_related("profile").prefetch_related("assigned_tables")

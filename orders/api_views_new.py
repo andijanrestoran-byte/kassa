@@ -553,8 +553,9 @@ class CashierCloseTableView(APIView):
         with transaction.atomic():
             for order in active_orders:
                 order_total = sum(
-                    item.line_total for item in order.items.all()
-                    if item.status != OrderItem.Status.REJECTED
+                    (item.line_total for item in order.items.all()
+                    if item.status != OrderItem.Status.REJECTED),
+                    Decimal("0")
                 )
                 total += order_total
                 if not hasattr(order, "payment"):

@@ -83,8 +83,8 @@ def _serialize_order(order: Order, include_items: bool = True):
         "status_label": order.get_status_display(),
         "waiter": {
             "id": order.waiter_id,
-            "full_name": order.waiter.full_name,
-            "phone": order.waiter.phone,
+            "full_name": order.waiter.full_name if order.waiter else "Mijoz",
+            "phone": order.waiter.phone if order.waiter else "",
         },
         "table": {
             "id": order.table_id,
@@ -115,6 +115,7 @@ def _serialize_table_summary(summary):
             "id": latest.id,
             "external_id": latest.external_id,
             "status": latest.status,
+            "source": latest.client_name if latest.order_source == Order.OrderSource.CLIENT else (latest.waiter.full_name if latest.waiter else "—")
         } if latest else None,
     }
 

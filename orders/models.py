@@ -1,4 +1,5 @@
 import secrets
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
@@ -231,7 +232,7 @@ class Order(models.Model):
 
     @property
     def total_amount(self):
-        return sum(item.line_total for item in self.items.all())
+        return sum((item.line_total for item in self.items.all()), Decimal("0"))
 
 
 class OrderItem(models.Model):

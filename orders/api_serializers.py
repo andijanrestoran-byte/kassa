@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.db.models import Sum, Q
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -349,10 +350,19 @@ def build_dashboard_summary():
     orders = Order.objects.all()
     today_orders = orders.filter(created_at__date=today)
     payments_today = Payment.objects.filter(paid_at__date=today)
-    cash_today = sum((payment.amount for payment in payments_today.filter(payment_method=Payment.Method.CASH)), Decimal("0"))
-    card_today = sum((payment.amount for payment in payments_today.filter(payment_method=Payment.Method.CARD)), Decimal("0"))
-    mixed_today = sum((payment.amount for payment in payments_today.filter(payment_method=Payment.Method.MIXED)), Decimal("0"))
-    total_today = cash_today + card_today + mixed_today
+    
+    # Aggregate sums efficiently
+    payment_sums = payments_today.aggregate(
+        cash=Sum('amount', filter=Q(payment_method=Payment.Method.CASH)),
+        card=Sum('amount', filter=Q(payment_method=Payment.Method.CARD)),
+        mixed=Sum('amount', filter=Q(payment_method=Payment.Method.MIXED)),
+        total=Sum('amount')
+    )
+
+    cash_today = payment_sums['cash'] or Decimal("0")
+    card_today = payment_sums['card'] or Decimal("0")
+    mixed_today = payment_sums['mixed'] or Decimal("0")
+    total_today = payment_sums['total'] or Decimal("0")
 
     return {
         "tables": {
