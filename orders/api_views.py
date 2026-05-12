@@ -263,7 +263,7 @@ class OrdersListCreateView(APIView):
         if date:
             orders = orders.filter(created_at__date=date)
 
-        data = [serialize_order(order, include_items=False) for order in orders.order_by("-created_at")]
+        data = [serialize_order(order, include_items=True) for order in orders.order_by("-created_at")]
         return Response(data)
 
     def post(self, request):

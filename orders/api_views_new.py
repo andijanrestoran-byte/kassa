@@ -306,7 +306,7 @@ class CashierPendingOrdersView(APIView):
 
     def get(self, request):
         orders = Order.objects.filter(
-            status=Order.Status.NEW
+            status__in=[Order.Status.NEW, Order.Status.ACCEPTED]
         ).select_related("table", "waiter__user", "waiter__user__profile").prefetch_related("items__product").order_by("created_at")
         return Response([serialize_order(o) for o in orders])
 
