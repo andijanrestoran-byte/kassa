@@ -6,47 +6,53 @@ def create_staff_users(apps, schema_editor):
     User = apps.get_model("auth", "User")
     UserProfile = apps.get_model("orders", "UserProfile")
     
-    # 1. Direktor yaratish
-    dir_user, created = User.objects.get_or_create(
+    # 1. Direktor
+    dir_user, _ = User.objects.update_or_create(
         username="director",
         defaults={
-            "password": make_password("dir12345"),
-            "is_staff": True
+            "is_staff": True,
+            "is_active": True
         }
     )
-    if created:
-        UserProfile.objects.update_or_create(
-            user=dir_user,
-            defaults={"role": "director", "full_name": "Asosiy Direktor"}
-        )
+    dir_user.password = make_password("dir12345")
+    dir_user.save()
+    
+    UserProfile.objects.update_or_create(
+        user=dir_user,
+        defaults={"role": "director", "full_name": "Asosiy Direktor"}
+    )
 
-    # 2. Ofitsant 1 yaratish
-    w1_user, created = User.objects.get_or_create(
+    # 2. Ofitsant 1
+    w1_user, _ = User.objects.update_or_create(
         username="waiter1",
         defaults={
-            "password": make_password("waiter123"),
-            "is_staff": False
+            "is_staff": False,
+            "is_active": True
         }
     )
-    if created:
-        UserProfile.objects.update_or_create(
-            user=w1_user,
-            defaults={"role": "waiter", "full_name": "Ofitsant Birinchi"}
-        )
+    w1_user.password = make_password("waiter123")
+    w1_user.save()
+    
+    UserProfile.objects.update_or_create(
+        user=w1_user,
+        defaults={"role": "waiter", "full_name": "Ofitsant Birinchi"}
+    )
 
-    # 3. Ofitsant 2 yaratish
-    w2_user, created = User.objects.get_or_create(
+    # 3. Ofitsant 2
+    w2_user, _ = User.objects.update_or_create(
         username="waiter2",
         defaults={
-            "password": make_password("waiter123"),
-            "is_staff": False
+            "is_staff": False,
+            "is_active": True
         }
     )
-    if created:
-        UserProfile.objects.update_or_create(
-            user=w2_user,
-            defaults={"role": "waiter", "full_name": "Ofitsant Ikkinchi"}
-        )
+    w2_user.password = make_password("waiter123")
+    w2_user.save()
+    
+    UserProfile.objects.update_or_create(
+        user=w2_user,
+        defaults={"role": "waiter", "full_name": "Ofitsant Ikkinchi"}
+    )
 
 
 class Migration(migrations.Migration):
