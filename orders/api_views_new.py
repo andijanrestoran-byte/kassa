@@ -7,7 +7,8 @@ import qrcode
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Sum, Count, Q
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from rest_framework import generics, permissions, status
@@ -102,7 +103,7 @@ class DirectorWaiterDetailView(APIView):
     def patch(self, request, user_id):
         serializer = WaiterUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = generics.get_object_or_404(User.objects.select_related("profile"), pk=user_id)
+        user = get_object_or_404(User.objects.select_related("profile"), pk=user_id)
         profile = getattr(user, "profile", None)
         if not profile or profile.role != UserProfile.Role.WAITER:
             return Response({"detail": "Bu foydalanuvchi ofitsant emas."}, status=400)
@@ -126,7 +127,7 @@ class DirectorWaiterDetailView(APIView):
         })
 
     def delete(self, request, user_id):
-        user = generics.get_object_or_404(User, pk=user_id)
+        user = get_object_or_404(User, pk=user_id)
         profile = getattr(user, "profile", None)
         if not profile or profile.role != UserProfile.Role.WAITER:
             return Response({"detail": "Bu foydalanuvchi ofitsant emas."}, status=400)
@@ -219,7 +220,7 @@ class TableQRCodeView(APIView):
     permission_classes = [IsDirector]
 
     def get(self, request, table_id):
-        table = generics.get_object_or_404(DiningTable, pk=table_id)
+        table = get_object_or_404(DiningTable, pk=table_id)
         base_url = request.query_params.get("base_url", request.build_absolute_uri("/"))
         qr_url = f"{base_url.rstrip('/')}/api/v1/public/menu/{table.qr_token}"
         img = qrcode.make(qr_url, box_size=10, border=2)
@@ -285,7 +286,7 @@ class CashierAcceptOrderView(APIView):
     permission_classes = [IsCashier]
 
     def post(self, request, order_id):
-        order = generics.get_object_or_404(
+        order = get_object_or_404(
             Order.objects.select_related("table", "waiter__user").prefetch_related("items__product"),
             pk=order_id,
         )
@@ -318,7 +319,7 @@ class PublicMenuView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, qr_token):
-        table = generics.get_object_or_404(DiningTable, qr_token=qr_token)
+        table = get_object_or_404(DiningTable, qr_token=qr_token)
         categories = MenuCategory.objects.all()
         products = Product.objects.filter(is_active=True).select_related("category")
         today = timezone.localdate()
@@ -351,7 +352,7 @@ class PublicClientOrderView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, qr_token):
-        table = generics.get_object_or_404(DiningTable, qr_token=qr_token)
+        table = get_object_or_404(DiningTable, qr_token=qr_token)
         serializer = ClientOrderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data
@@ -365,10 +366,10 @@ class PublicClientOrderView(APIView):
                 order_source=Order.OrderSource.CLIENT, client_name=d["client_name"],
             )
             for item in d["items"]:
-                product = generics.get_object_or_404(Product, pk=item["menu_item_id"], is_active=True)
+                product = get_object_or_404(Product, pk=item["menu_item_id"], is_active=True)
                 remaining = product.get_today_remaining()
                 if remaining is not None and remaining < item["quantity"]:
-                    raise generics.Http404(f"{product.name} sig'imi yetarli emas. Qolgan: {remaining}")
+                    raise Http404(f"{product.name} sig'imi yetarli emas. Qolgan: {remaining}")
                 OrderItem.objects.create(
                     order=order, product=product, quantity=item["quantity"],
                     note=item.get("note", ""),
@@ -389,7 +390,7 @@ class PublicOrderStatusView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, order_id):
-        order = generics.get_object_or_404(
+        order = get_object_or_404(
             Order.objects.select_related("table").prefetch_related("items__product"),
             pk=order_id, order_source=Order.OrderSource.CLIENT,
         )
@@ -428,7 +429,7 @@ class WaiterDetailReportView(APIView):
         else:
             start = today
 
-        user = generics.get_object_or_404(User.objects.select_related("profile"), pk=user_id)
+        user = get_object_or_404(User.objects.select_related("profile"), pk=user_id)
         waiter = getattr(user, "waiter_profile", None)
         if not waiter:
             return Response({"detail": "Bu foydalanuvchi ofitsant emas."}, status=400)
@@ -483,7 +484,7 @@ class CashierTableBillView(APIView):
     permission_classes = [IsDirectorOrCashier]
 
     def get(self, request, table_id):
-        table = generics.get_object_or_404(DiningTable, pk=table_id)
+        table = get_object_or_404(DiningTable, pk=table_id)
         active_orders = Order.objects.filter(
             table=table, status__in=ACTIVE_ORDER_STATUSES
         ).select_related("waiter__user__profile").prefetch_related("items__product").order_by("created_at")
@@ -535,7 +536,7 @@ class CashierCloseTableView(APIView):
     permission_classes = [IsCashier]
 
     def post(self, request, table_id):
-        table = generics.get_object_or_404(DiningTable, pk=table_id)
+        table = get_object_or_404(DiningTable, pk=table_id)
         payment_method = request.data.get("payment_method", "cash")
         if payment_method not in dict(Payment.Method.choices):
             return Response({"detail": "Noto'g'ri to'lov usuli."}, status=400)
@@ -587,13 +588,13 @@ class PublicClientRejectItemView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, order_id, item_id):
-        order = generics.get_object_or_404(
+        order = get_object_or_404(
             Order, pk=order_id, order_source=Order.OrderSource.CLIENT
         )
         if order.status not in (Order.Status.NEW, Order.Status.ACCEPTED):
             return Response({"detail": "Bu buyurtmani o'zgartirish mumkin emas."}, status=400)
 
-        item = generics.get_object_or_404(OrderItem, pk=item_id, order=order)
+        item = get_object_or_404(OrderItem, pk=item_id, order=order)
 
         if not item.product.is_rejectable:
             return Response({"detail": "Bu taomni rad etish mumkin emas."}, status=400)

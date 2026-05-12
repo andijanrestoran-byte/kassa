@@ -2,6 +2,8 @@ from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Prefetch, Q
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from rest_framework import generics, permissions, status
@@ -155,7 +157,7 @@ class TableJoinView(APIView):
     permission_classes = [IsWaiter]
 
     def post(self, request, table_id):
-        table = generics.get_object_or_404(DiningTable.objects.prefetch_related("assigned_waiters__profile"), pk=table_id)
+        table = get_object_or_404(DiningTable.objects.prefetch_related("assigned_waiters__profile"), pk=table_id)
         table.assigned_waiters.add(request.user)
         return Response(TableListSerializer(table, context={"include_waiters": True}).data)
 
@@ -180,7 +182,7 @@ class MenuCategoryDetailView(APIView):
     permission_classes = [IsDirector]
 
     def patch(self, request, pk):
-        category = generics.get_object_or_404(MenuCategory, pk=pk)
+        category = get_object_or_404(MenuCategory, pk=pk)
         serializer = MenuCategorySerializer(category, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         for key, value in serializer.validated_data.items():
@@ -189,7 +191,7 @@ class MenuCategoryDetailView(APIView):
         return Response(MenuCategorySerializer(category).data)
 
     def delete(self, request, pk):
-        category = generics.get_object_or_404(MenuCategory, pk=pk)
+        category = get_object_or_404(MenuCategory, pk=pk)
         category.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -221,14 +223,14 @@ class MenuItemDetailView(APIView):
     permission_classes = [IsDirector]
 
     def patch(self, request, pk):
-        item = generics.get_object_or_404(Product, pk=pk)
+        item = get_object_or_404(Product, pk=pk)
         serializer = MenuItemWriteSerializer(item, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         item = serializer.save()
         return Response(MenuItemSerializer(item).data)
 
     def delete(self, request, pk):
-        item = generics.get_object_or_404(Product, pk=pk)
+        item = get_object_or_404(Product, pk=pk)
         item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -272,7 +274,7 @@ class OrdersListCreateView(APIView):
         serializer = CreateOrderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         validated = serializer.validated_data
-        table = generics.get_object_or_404(DiningTable, pk=validated["table_id"])
+        table = get_object_or_404(DiningTable, pk=validated["table_id"])
         waiter = ensure_waiter_instance(request.user)
         auto_accept = table_has_open_bill(table)
         today = timezone.localdate()
@@ -288,7 +290,7 @@ class OrdersListCreateView(APIView):
                 order_source=Order.OrderSource.WAITER,
             )
             for item in validated["items"]:
-                product = generics.get_object_or_404(Product, pk=item["menu_item_id"], is_active=True)
+                product = get_object_or_404(Product, pk=item["menu_item_id"], is_active=True)
                 remaining = product.get_today_remaining()
                 if remaining is not None and remaining < item["quantity"]:
                     transaction.set_rollback(True)
@@ -316,7 +318,7 @@ class OrdersListCreateView(APIView):
 
 class OrderDetailView(APIView):
     def get(self, request, order_id):
-        order = generics.get_object_or_404(
+        order = get_object_or_404(
             Order.objects.select_related("table", "waiter__user", "waiter__user__profile").prefetch_related("items__product"),
             pk=order_id,
         )
@@ -332,7 +334,7 @@ class RejectOrderView(APIView):
     def post(self, request, order_id):
         serializer = RejectCancelSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        order = generics.get_object_or_404(Order, pk=order_id)
+        order = get_object_or_404(Order, pk=order_id)
         order.status = Order.Status.PARTIALLY_REJECTED
         order.status_reason = serializer.validated_data["reason"]
         order.save(update_fields=["status", "status_reason", "updated_at"])
@@ -343,7 +345,7 @@ class CancelOrderView(APIView):
     def post(self, request, order_id):
         serializer = RejectCancelSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        order = generics.get_object_or_404(Order, pk=order_id)
+        order = get_object_or_404(Order, pk=order_id)
         profile = ensure_profile(request.user)
         if profile and profile.role == UserProfile.Role.WAITER and order.waiter.user_id != request.user.id:
             return Response({"detail": "Bu order sizga tegishli emas."}, status=status.HTTP_403_FORBIDDEN)
@@ -363,7 +365,7 @@ class PaymentsView(APIView):
     def post(self, request):
         serializer = PaymentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        order = generics.get_object_or_404(
+        order = get_object_or_404(
             Order.objects.select_related("waiter__user", "waiter__user__profile", "table"),
             pk=serializer.validated_data["order_id"],
         )
