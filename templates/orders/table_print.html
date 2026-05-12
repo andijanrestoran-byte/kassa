@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stol #{{ table.number }} cheki</title>
+    <style>
+        :root {
+            --text: #111;
+            --muted: #666;
+            --line: #ddd;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Arial", sans-serif;
+            background: #f3f3f3;
+            color: var(--text);
+        }
+        .receipt {
+            width: 80mm;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 12mm 8mm;
+            background: white;
+        }
+        .center { text-align: center; }
+        .title {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            margin: 0 0 6px;
+        }
+        .subtitle {
+            color: var(--muted);
+            font-size: 12px;
+            margin: 0 0 10px;
+        }
+        .line {
+            border-top: 1px dashed var(--line);
+            margin: 10px 0;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 13px;
+            margin: 4px 0;
+        }
+        .row strong { font-weight: 700; }
+        .items {
+            display: grid;
+            gap: 10px;
+        }
+        .item {
+            font-size: 13px;
+        }
+        .item-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .muted { color: var(--muted); }
+        .total {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        .actions {
+            margin-top: 14px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            appearance: none;
+            border: 1px solid #111;
+            background: #111;
+            color: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn.secondary {
+            background: white;
+            color: #111;
+        }
+        @media print {
+            body { background: white; }
+            .receipt { padding: 0; width: 80mm; }
+            .actions { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <div class="center">
+            <p class="title">FITPRO</p>
+            <p class="subtitle">Stol #{{ table.number }} чек</p>
+            {% if table.zone %}<p class="subtitle">{{ table.zone }}</p>{% endif %}
+        </div>
+
+        <div class="line"></div>
+
+        <div class="row"><span>Stol</span><strong>#{{ table.number }}</strong></div>
+        <div class="row"><span>Buyurtma soni</span><strong>{{ orders_count }}</strong></div>
+        <div class="row"><span>Mahsulotlar soni</span><strong>{{ items_count }}</strong></div>
+
+        <div class="line"></div>
+
+        <div class="items">
+            {% for order in active_orders %}
+                <div class="item">
+                    <div class="item-top">
+                        <strong>#{{ order.external_id }}</strong>
+                        <span>{{ order.total_amount }}</span>
+                    </div>
+                    <div class="muted">{{ order.waiter.full_name }} / {{ order.created_at|date:"H:i, d.m.Y" }}</div>
+                    {% for item in order.items.all %}
+                        <div class="row">
+                            <span>{{ item.product.name }} x{{ item.quantity }}</span>
+                            <span>{{ item.line_total }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% empty %}
+                <div class="muted">Ochiq buyurtma yo‘q</div>
+            {% endfor %}
+        </div>
+
+        <div class="line"></div>
+
+        <div class="row total">
+            <span>JAMI</span>
+            <span>{{ total_amount }}</span>
+        </div>
+
+        <div class="actions">
+            <button class="btn" type="button" onclick="window.print()">Chop etish</button>
+            <a class="btn secondary" href="{% url 'orders:table_bill' table.pk %}">Orqaga</a>
+        </div>
+    </div>
+
+    {% if auto_print %}
+        <script>
+            window.addEventListener("load", function () {
+                window.print();
+            });
+        </script>
+    {% endif %}
+</body>
+</html>

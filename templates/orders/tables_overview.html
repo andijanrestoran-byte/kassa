@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Stollar{% endblock %}
+{% block page_kicker %}Stollar{% endblock %}
+{% block hero_title %}Stollar bo'yicha hisob{% endblock %}
+{% block hero_text %}Bu bo'lim stol kesimida ishlash uchun. Har bir stolga kirib umumiy hisob, chek va yopish funksiyalari bajariladi.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Stollar</span>
+        <strong>{{ tables|length }}</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="section-title">
+            <div>
+                <h2>Stollar hisoboti</h2>
+                <p class="support-text">Faqat stolga tegishli funksiyalar shu sahifada jamlangan.</p>
+            </div>
+        </div>
+
+        <div class="table-grid">
+            {% for entry in tables %}
+                <a class="table-card{% if entry.orders_count %} active{% endif %}" href="{% url 'orders:table_bill' entry.table.pk %}">
+                    <div class="table-card-top">
+                        <div class="stack">
+                            <span class="pill">Stol</span>
+                            <div class="table-number">#{{ entry.table.number }}</div>
+                        </div>
+                        <div class="stack price-block">
+                            <span class="support-text">Hisob</span>
+                            <div class="table-total">{{ entry.total_amount }}</div>
+                        </div>
+                    </div>
+                    <div class="table-meta">
+                        <span>{{ entry.table.zone|default:"Zona belgilanmagan" }}</span>
+                        <span>{{ entry.orders_count }} ta faol buyurtma</span>
+                        <span>{{ entry.items_count }} ta mahsulot</span>
+                    </div>
+                    <div class="support-text">
+                        {% if entry.latest_order %}
+                            Oxirgi buyurtma: #{{ entry.latest_order.external_id }}
+                        {% else %}
+                            Hozircha buyurtma yo'q
+                        {% endif %}
+                    </div>
+                </a>
+            {% empty %}
+                <div class="surface empty" style="grid-column:1/-1;">
+                    <strong>Stollar topilmadi</strong>
+                    Avval admin panelda `DiningTable` yozuvlarini kiriting.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

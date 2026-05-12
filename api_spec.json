@@ -1,0 +1,700 @@
+{
+  "base_url": "https://your-domain.com",
+  "version": "v1",
+  "auth": {
+    "type": "Bearer JWT",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "endpoints": {
+    "auth": {
+      "login": {
+        "method": "POST",
+        "path": "/api/v1/auth/login",
+        "auth_required": false,
+        "request": {
+          "username": "string",
+          "password": "string"
+        },
+        "response": {
+          "access": "string (JWT token)",
+          "refresh": "string (JWT token)",
+          "user": {
+            "id": "int",
+            "username": "string",
+            "full_name": "string",
+            "role": "string (director|cashier|waiter)",
+            "phone": "string"
+          }
+        }
+      },
+      "refresh": {
+        "method": "POST",
+        "path": "/api/v1/auth/refresh",
+        "auth_required": false,
+        "request": {
+          "refresh": "string"
+        },
+        "response": {
+          "access": "string"
+        }
+      },
+      "me": {
+        "method": "GET",
+        "path": "/api/v1/auth/me",
+        "auth_required": true,
+        "roles": ["director", "cashier", "waiter"],
+        "response": {
+          "id": "int",
+          "username": "string",
+          "full_name": "string",
+          "role": "string",
+          "phone": "string",
+          "shift": "string",
+          "experience": "string"
+        }
+      }
+    },
+
+    "director": {
+      "waiters_list": {
+        "method": "GET",
+        "path": "/api/v1/director/waiters",
+        "auth_required": true,
+        "roles": ["director"],
+        "response": [
+          {
+            "id": "int",
+            "username": "string",
+            "full_name": "string",
+            "phone": "string",
+            "shift": "string",
+            "experience": "string",
+            "tables": ["int"],
+            "active_orders_count": "int",
+            "rejected_orders_count": "int"
+          }
+        ]
+      },
+      "waiters_create": {
+        "method": "POST",
+        "path": "/api/v1/director/waiters",
+        "auth_required": true,
+        "roles": ["director"],
+        "request": {
+          "username": "string (required)",
+          "password": "string (required, min 4)",
+          "full_name": "string (required)",
+          "phone": "string (optional)",
+          "shift": "string (optional)",
+          "experience": "string (optional)"
+        },
+        "response": {
+          "id": "int",
+          "username": "string",
+          "full_name": "string",
+          "phone": "string",
+          "shift": "string",
+          "experience": "string"
+        }
+      },
+      "waiters_update": {
+        "method": "PATCH",
+        "path": "/api/v1/director/waiters/{user_id}",
+        "path_params": {"user_id": "int"},
+        "auth_required": true,
+        "roles": ["director"],
+        "request": {
+          "full_name": "string (optional)",
+          "phone": "string (optional)",
+          "shift": "string (optional)",
+          "experience": "string (optional)",
+          "password": "string (optional)"
+        }
+      },
+      "waiters_delete": {
+        "method": "DELETE",
+        "path": "/api/v1/director/waiters/{user_id}",
+        "path_params": {"user_id": "int"},
+        "auth_required": true,
+        "roles": ["director"],
+        "response_code": 204
+      },
+      "menu_categories_list": {
+        "method": "GET",
+        "path": "/api/v1/menu/categories",
+        "auth_required": true,
+        "roles": ["director", "cashier", "waiter"],
+        "response": {
+          "results": [
+            {
+              "id": "int",
+              "name": "string",
+              "sort_order": "int"
+            }
+          ]
+        }
+      },
+      "menu_categories_create": {
+        "method": "POST",
+        "path": "/api/v1/menu/categories",
+        "auth_required": true,
+        "roles": ["director"],
+        "request": {
+          "name": "string (required)",
+          "sort_order": "int (optional, default 0)"
+        }
+      },
+      "menu_categories_update": {
+        "method": "PATCH",
+        "path": "/api/v1/menu/categories/{id}",
+        "path_params": {"id": "int"},
+        "auth_required": true,
+        "roles": ["director"]
+      },
+      "menu_categories_delete": {
+        "method": "DELETE",
+        "path": "/api/v1/menu/categories/{id}",
+        "path_params": {"id": "int"},
+        "auth_required": true,
+        "roles": ["director"],
+        "response_code": 204
+      },
+      "menu_items_list": {
+        "method": "GET",
+        "path": "/api/v1/menu/items",
+        "auth_required": true,
+        "roles": ["director", "cashier", "waiter"],
+        "response": {
+          "results": [
+            {
+              "id": "int",
+              "name": "string",
+              "category_id": "int|null",
+              "category_name": "string|null",
+              "description": "string",
+              "price": "decimal",
+              "is_active": "bool",
+              "is_rejectable": "bool",
+              "remaining_today": "int|null",
+              "is_available": "bool",
+              "image_url": "string|null"
+            }
+          ]
+        }
+      },
+      "menu_items_create": {
+        "method": "POST",
+        "path": "/api/v1/menu/items",
+        "auth_required": true,
+        "roles": ["director"],
+        "content_type": "application/json OR multipart/form-data (rasm yuklash uchun)",
+        "request": {
+          "name": "string (required)",
+          "category_id": "int (required)",
+          "description": "string (optional)",
+          "price": "decimal (required)",
+          "is_active": "bool (default true)",
+          "is_rejectable": "bool (default true)",
+          "image": "file (optional, multipart)"
+        }
+      },
+      "menu_items_update": {
+        "method": "PATCH",
+        "path": "/api/v1/menu/items/{id}",
+        "path_params": {"id": "int"},
+        "auth_required": true,
+        "roles": ["director"]
+      },
+      "menu_items_delete": {
+        "method": "DELETE",
+        "path": "/api/v1/menu/items/{id}",
+        "path_params": {"id": "int"},
+        "auth_required": true,
+        "roles": ["director"],
+        "response_code": 204
+      },
+      "reports_revenue": {
+        "method": "GET",
+        "path": "/api/v1/director/reports/revenue",
+        "auth_required": true,
+        "roles": ["director"],
+        "query_params": {
+          "period": "string (daily|weekly|monthly, default daily)"
+        },
+        "response": {
+          "period": "string",
+          "start_date": "date (YYYY-MM-DD)",
+          "end_date": "date",
+          "totals": {
+            "cash": "decimal",
+            "card": "decimal",
+            "mixed": "decimal",
+            "total": "decimal"
+          },
+          "daily_breakdown": [
+            {
+              "date": "date",
+              "cash": "decimal",
+              "card": "decimal",
+              "mixed": "decimal",
+              "total": "decimal"
+            }
+          ]
+        }
+      },
+      "reports_waiters": {
+        "method": "GET",
+        "path": "/api/v1/director/reports/waiters",
+        "auth_required": true,
+        "roles": ["director"],
+        "query_params": {
+          "period": "string (daily|weekly|monthly)"
+        },
+        "response": {
+          "period": "string",
+          "waiters": [
+            {
+              "id": "int",
+              "full_name": "string",
+              "sold_orders": "int",
+              "rejected_orders": "int",
+              "cancelled_orders": "int",
+              "revenue": "decimal"
+            }
+          ]
+        }
+      },
+      "reports_waiter_detail": {
+        "method": "GET",
+        "path": "/api/v1/director/reports/waiters/{user_id}",
+        "path_params": {"user_id": "int"},
+        "auth_required": true,
+        "roles": ["director"],
+        "query_params": {
+          "period": "string (daily|weekly|monthly)"
+        },
+        "response": {
+          "waiter": {"id": "int", "full_name": "string"},
+          "period": "string",
+          "total_orders": "int",
+          "revenue": "decimal",
+          "sold_items": [
+            {"name": "string", "quantity": "int", "total": "decimal"}
+          ],
+          "rejected_items": [
+            {"name": "string", "quantity": "int", "total": "decimal"}
+          ],
+          "orders": [
+            {
+              "id": "int",
+              "table_number": "int",
+              "status": "string",
+              "created_at": "datetime",
+              "total": "decimal"
+            }
+          ]
+        }
+      },
+      "table_qr_code": {
+        "method": "GET",
+        "path": "/api/v1/director/tables/{table_id}/qr",
+        "path_params": {"table_id": "int"},
+        "auth_required": true,
+        "roles": ["director"],
+        "response_type": "image/png",
+        "query_params": {
+          "base_url": "string (optional, QR ichidagi URL prefix)"
+        }
+      }
+    },
+
+    "cashier": {
+      "daily_stock_list": {
+        "method": "GET",
+        "path": "/api/v1/cashier/daily-stock",
+        "auth_required": true,
+        "roles": ["cashier", "director", "waiter"],
+        "response": [
+          {
+            "product_id": "int",
+            "product_name": "string",
+            "category_name": "string|null",
+            "price": "decimal",
+            "initial_quantity": "int|null",
+            "remaining_quantity": "int|null",
+            "is_set": "bool"
+          }
+        ]
+      },
+      "daily_stock_set": {
+        "method": "POST",
+        "path": "/api/v1/cashier/daily-stock",
+        "auth_required": true,
+        "roles": ["cashier"],
+        "request": {
+          "stocks": [
+            {
+              "product_id": "int (required)",
+              "initial_quantity": "int (required, min 0)"
+            }
+          ]
+        },
+        "response": [
+          {
+            "id": "int",
+            "product_id": "int",
+            "product_name": "string",
+            "product_price": "decimal",
+            "date": "date",
+            "initial_quantity": "int",
+            "remaining_quantity": "int"
+          }
+        ]
+      },
+      "orders_pending": {
+        "method": "GET",
+        "path": "/api/v1/cashier/orders/pending",
+        "auth_required": true,
+        "roles": ["cashier"],
+        "response": [
+          {
+            "id": "int",
+            "table": {"id": "int", "number": "int"},
+            "waiter": {"id": "int|null", "username": "string", "full_name": "string"},
+            "status": "string",
+            "note": "string",
+            "reason": "string",
+            "total_amount": "decimal",
+            "created_at": "datetime",
+            "order_source": "string (waiter|client)",
+            "client_name": "string",
+            "items": [
+              {
+                "id": "int",
+                "menu_item_id": "int",
+                "menu_item_name": "string",
+                "quantity": "int",
+                "unit_price": "decimal",
+                "line_total": "decimal",
+                "note": "string",
+                "is_rejectable": "bool",
+                "status": "string (pending|accepted|rejected)"
+              }
+            ]
+          }
+        ]
+      },
+      "order_accept": {
+        "method": "POST",
+        "path": "/api/v1/cashier/orders/{order_id}/accept",
+        "path_params": {"order_id": "int"},
+        "auth_required": true,
+        "roles": ["cashier"],
+        "request": null,
+        "response": "(full order object)"
+      },
+      "table_bill": {
+        "method": "GET",
+        "path": "/api/v1/cashier/tables/{table_id}/bill",
+        "path_params": {"table_id": "int"},
+        "auth_required": true,
+        "roles": ["cashier", "director"],
+        "response": {
+          "table": {"id": "int", "number": "int"},
+          "status": "string",
+          "orders_count": "int",
+          "grand_total": "decimal",
+          "items_summary": [
+            {
+              "name": "string",
+              "quantity": "int",
+              "unit_price": "decimal",
+              "total": "decimal"
+            }
+          ],
+          "orders": [
+            {
+              "id": "int",
+              "source": "string (ofitsant ismi yoki mijoz ismi)",
+              "order_source": "string (waiter|client)",
+              "items": [
+                {
+                  "product_name": "string",
+                  "quantity": "int",
+                  "unit_price": "decimal",
+                  "line_total": "decimal",
+                  "note": "string"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "table_close": {
+        "method": "POST",
+        "path": "/api/v1/cashier/tables/{table_id}/close",
+        "path_params": {"table_id": "int"},
+        "auth_required": true,
+        "roles": ["cashier"],
+        "request": {
+          "payment_method": "string (cash|card|mixed)"
+        },
+        "response": {
+          "table_number": "int",
+          "total_amount": "decimal",
+          "payment_method": "string",
+          "orders_closed": "int",
+          "payments_created": ["int"]
+        }
+      }
+    },
+
+    "waiter": {
+      "all_tables": {
+        "method": "GET",
+        "path": "/api/v1/waiter/all-tables",
+        "auth_required": true,
+        "roles": ["waiter"],
+        "response": [
+          {
+            "id": "int",
+            "number": "int",
+            "seats": "int",
+            "location": "string",
+            "status": "string (free|busy|assigned)",
+            "qr_token": "string",
+            "assigned_waiters": [
+              {"id": "int", "username": "string", "full_name": "string"}
+            ]
+          }
+        ]
+      },
+      "tables_list": {
+        "method": "GET",
+        "path": "/api/v1/tables",
+        "auth_required": true,
+        "roles": ["waiter", "cashier", "director"],
+        "response": [
+          {
+            "id": "int",
+            "number": "int",
+            "seats": "int",
+            "status": "string"
+          }
+        ]
+      },
+      "table_join": {
+        "method": "POST",
+        "path": "/api/v1/tables/{table_id}/join",
+        "path_params": {"table_id": "int"},
+        "auth_required": true,
+        "roles": ["waiter"]
+      },
+      "orders_create": {
+        "method": "POST",
+        "path": "/api/v1/orders",
+        "auth_required": true,
+        "roles": ["waiter"],
+        "request": {
+          "table_id": "int (required)",
+          "note": "string (optional)",
+          "items": [
+            {
+              "menu_item_id": "int (required)",
+              "quantity": "int (required, min 1)",
+              "note": "string (optional, masalan: tuzsiz, achchiqsiz)"
+            }
+          ]
+        },
+        "response": "(full order object)",
+        "errors": {
+          "400": "Sig'im yetarli emas",
+          "403": "Faqat waiter order yarata oladi",
+          "404": "Mahsulot topilmadi"
+        }
+      },
+      "orders_list": {
+        "method": "GET",
+        "path": "/api/v1/orders",
+        "auth_required": true,
+        "roles": ["waiter", "cashier", "director"],
+        "query_params": {
+          "status": "string (optional: active|rejected|paid)",
+          "table_id": "int (optional)"
+        }
+      },
+      "order_detail": {
+        "method": "GET",
+        "path": "/api/v1/orders/{order_id}",
+        "path_params": {"order_id": "int"},
+        "auth_required": true
+      },
+      "order_reject": {
+        "method": "POST",
+        "path": "/api/v1/orders/{order_id}/reject",
+        "path_params": {"order_id": "int"},
+        "auth_required": true,
+        "roles": ["cashier", "director"],
+        "request": {
+          "reason": "string (required)",
+          "rejected_items": ["int (item IDs, optional)"]
+        }
+      },
+      "order_cancel": {
+        "method": "POST",
+        "path": "/api/v1/orders/{order_id}/cancel",
+        "path_params": {"order_id": "int"},
+        "auth_required": true,
+        "request": {
+          "reason": "string (required)"
+        }
+      }
+    },
+
+    "payments": {
+      "create": {
+        "method": "POST",
+        "path": "/api/v1/payments",
+        "auth_required": true,
+        "roles": ["cashier"],
+        "request": {
+          "order_id": "int (required)",
+          "payment_method": "string (cash|card|mixed)",
+          "amount": "decimal (required)"
+        }
+      },
+      "list": {
+        "method": "GET",
+        "path": "/api/v1/payments",
+        "auth_required": true,
+        "roles": ["cashier", "director"],
+        "query_params": {
+          "date_from": "date (optional)",
+          "date_to": "date (optional)",
+          "payment_method": "string (optional)",
+          "cashier_id": "int (optional)"
+        }
+      }
+    },
+
+    "public": {
+      "_note": "Bu endpointlar AUTH KERAK EMAS — mijoz uchun",
+      "menu": {
+        "method": "GET",
+        "path": "/api/v1/public/menu/{qr_token}",
+        "path_params": {"qr_token": "string (stol QR tokendan olinadi)"},
+        "auth_required": false,
+        "response": {
+          "table": {"id": "int", "number": "int"},
+          "categories": [
+            {
+              "id": "int",
+              "name": "string",
+              "items": [
+                {
+                  "id": "int",
+                  "name": "string",
+                  "description": "string",
+                  "price": "decimal",
+                  "is_rejectable": "bool",
+                  "remaining": "int|null",
+                  "is_available": "bool",
+                  "image_url": "string|null"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "client_order": {
+        "method": "POST",
+        "path": "/api/v1/public/orders/{qr_token}",
+        "path_params": {"qr_token": "string"},
+        "auth_required": false,
+        "request": {
+          "client_name": "string (required — mijoz ismi)",
+          "note": "string (optional)",
+          "items": [
+            {
+              "menu_item_id": "int (required)",
+              "quantity": "int (required, min 1)",
+              "note": "string (optional)"
+            }
+          ]
+        },
+        "response": {
+          "id": "int",
+          "external_id": "string",
+          "table_number": "int",
+          "client_name": "string",
+          "status": "string",
+          "total_amount": "decimal"
+        }
+      },
+      "order_status": {
+        "method": "GET",
+        "path": "/api/v1/public/order-status/{order_id}",
+        "path_params": {"order_id": "int"},
+        "auth_required": false
+      },
+      "reject_item": {
+        "method": "POST",
+        "path": "/api/v1/public/orders/{order_id}/items/{item_id}/reject",
+        "path_params": {"order_id": "int", "item_id": "int"},
+        "auth_required": false,
+        "request": {
+          "reason": "string (optional)"
+        },
+        "response": {
+          "detail": "string",
+          "order_status": "string"
+        },
+        "note": "Faqat is_rejectable=true bo'lgan taomlarni rad etish mumkin"
+      }
+    },
+
+    "dashboard": {
+      "summary": {
+        "method": "GET",
+        "path": "/api/v1/dashboard/summary",
+        "auth_required": true,
+        "roles": ["director"],
+        "response": {
+          "tables": {
+            "total": "int",
+            "free": "int",
+            "busy": "int",
+            "assigned": "int"
+          },
+          "orders": {
+            "active": "int",
+            "rejected": "int",
+            "paid_today": "int"
+          },
+          "payments": {
+            "cash_today": "decimal",
+            "card_today": "decimal",
+            "total_today": "decimal"
+          },
+          "staff": {
+            "active_waiters": "int"
+          }
+        }
+      }
+    }
+  },
+
+  "data_types": {
+    "order_status": ["new", "accepted", "partially_rejected", "completed", "cancelled"],
+    "order_source": ["waiter", "client"],
+    "payment_method": ["cash", "card", "mixed"],
+    "user_role": ["director", "cashier", "waiter"],
+    "table_status": ["free", "busy", "assigned"],
+    "item_status": ["pending", "accepted", "rejected"]
+  },
+
+  "error_format": {
+    "detail": "string (xato xabari)"
+  }
+}

@@ -1,0 +1,374 @@
+DASTURNING HOZIRGI HOLATI VA MAQSADI
+
+1. Dastur maqsadi
+
+Mazkur dastur restoran yoki ovqatlanish shoxobchasi ish jarayonlarini raqamlashtirish uchun ishlab chiqilmoqda.
+Tizimning asosiy maqsadi quyidagilardan iborat:
+
+- direktor uchun boshqaruv va nazorat imkoniyatini yaratish;
+- kassir uchun buyurtma, menyu va tushum bilan ishlashni yengillashtirish;
+- ofitsantlar faoliyatini nazorat qilish;
+- mijozga QR kod orqali menyuni ko'rish va o'z-o'ziga xizmat asosida buyurtma berish imkonini berish;
+- kunlik ish jarayonlarini tartibli, tezkor va nazorat qilinadigan holatga keltirish.
+
+2. Dasturning hozirgi holati
+
+Loyiha Django 6.0 asosidagi backend va REST API ko'rinishida to'liq ishlab chiqilgan.
+Barcha asosiy modellar, API endpointlar, biznes logika va testlar yozilgan va muvaffaqiyatli sinovdan o'tgan.
+
+Texnik stack:
+- Backend: Django 6.0.5, Django REST Framework, SimpleJWT
+- Baza: SQLite (lokal), PostgreSQL (Railway production)
+- Qo'shimcha: Pillow (rasm), qrcode (QR generatsiya), CORS, dj-database-url, gunicorn
+- Test: 31 ta avtomatlashtirilgan test — barchasi muvaffaqiyatli
+
+Amalda mavjud va TO'LIQ ishlab chiqilgan qismlar:
+
+  Autentifikatsiya:
+  - JWT (access + refresh) token orqali login
+  - Rolga asoslangan ruxsat tizimi (director, cashier, waiter)
+  - Foydalanuvchi profili (ism, telefon, smena, tajriba)
+
+  Direktor funksiyalari:
+  - Ofitsantlarni yaratish (login/parol berish), tahrirlash, o'chirish (CRUD)
+  - Ofitsantlar ro'yxati va statistikasi (aktiv buyurtmalar, stollar)
+  - Menyu kategoriyalarini yaratish, tahrirlash, o'chirish
+  - Taomlarni yaratish (rad etiladi/etilMAYDI belgilash, rasm yuklash)
+  - Taomlarni tahrirlash va o'chirish
+  - Kunlik/haftalik/oylik tushum hisoboti (naqd + karta bo'linishi)
+  - Har bir ofitsant bo'yicha batafsil hisobot (qaysi taomlar sotgan/qaytargan)
+  - Stol uchun QR kod generatsiya (PNG rasm)
+  - Dashboard umumiy statistika
+
+  Kassir funksiyalari:
+  - Har kuni ovqatlar sig'imini (miqdorini) belgilash
+  - Bir nechta mahsulotga birdaniga sig'im qo'yish
+  - Yangi kelgan buyurtmalarni ko'rish (kutilayotgan)
+  - Buyurtmani qabul qilish va oshxonaga yo'naltirish
+  - Stol raqami bo'yicha hisobni olish (chek ma'lumotlari)
+  - Stol hisobini yopish (to'lov yaratish, stolni tozalash)
+  - Sig'imga qarab buyurtma cheklash (sig'im 0 = buyurtma rad etiladi)
+
+  Ofitsant funksiyalari:
+  - Barcha stollarni ko'rish (boshqa ofitsantlarniki ham)
+  - Stolga qo'shilish (birikish)
+  - Buyurtma yaratish (taomga izoh yozish bilan)
+  - Sig'im tekshirish — yetarli bo'lmasa xato qaytaradi
+  - Buyurtmalar ro'yxati va tafsilotlari
+
+  Mijoz (Klient) funksiyalari:
+  - Stoldagi QR kodni skanerlash orqali menyu ko'rish (auth kerak emas)
+  - O'z-o'ziga xizmat — ismini yozib buyurtma berish
+  - Taomlar holati ko'rinadi: mavjud, tugagan, rad etiladi/etilMAYDI
+  - Rad etiladigan taomlarni o'z buyurtmasidan rad etish
+  - Buyurtma holati ko'rish
+  - Kassirga stol raqami + "Mijoz" sifatida boradi
+
+  Stol boshqaruvi:
+  - Stollar ro'yxati va holati (free, busy, assigned)
+  - Har bir stolga QR token (avtomatik yaratiladi)
+  - Ofitsant biriktirish
+
+  To'lovlar:
+  - To'lov yaratish (naqd/karta/aralash)
+  - To'lovlar ro'yxati (sana, usul, kassir bo'yicha filter)
+
+  Kunlik sig'im nazorati:
+  - ProductDailyStock modeli — kassir har kuni boshlang'ich sig'im belgilaydi
+  - Buyurtma berilganda sig'im avtomatik kamayadi
+  - Sig'im 0 bo'lganda menyu'da taom ko'rinadi lekin "Tugagan" yozuvi chiqadi
+  - Buyurtma berib bo'lmaydi (xato qaytaradi)
+
+  Admin panel:
+  - Barcha modellar Django admin'da boshqariladi
+  - Filtrlash, qidirish, inline tahrirlash
+
+  Web interfeys:
+  - Dashboard, buyurtmalar, rad etilgan buyurtmalar
+  - Stol kesimidagi ko'rinishlar, chek sahifasi
+
+3. Yakunlanmagan yoki kelajakda qo'shilishi mumkin qismlar
+
+  - Flutter mobil ilova (hozir faqat API tayyor, frontend ishlanmagan)
+  - Push-notification (buyurtma holati o'zgarganda)
+  - Oshxona uchun alohida panel (buyurtmalarni ko'rish)
+  - Rasm optimizatsiya (thumbnail)
+  - WebSocket (real-time buyurtma yangilanishi)
+
+4. Hozirgi baho
+
+Loyiha backend qismi TO'LIQ ishlab chiqilgan va production uchun tayyor.
+Barcha biznes talablar amalga oshirilgan va 31 ta avtomatlashtirilgan test bilan tasdiqlangan.
+API Flutter mobil ilova uchun to'liq tayyor — api_spec.json faylida barcha endpoint hujjatlashtirilgan.
+
+===================================================================================
+TEXNIK ZADACHA (TZ) — TO'LIQ FUNKSIONAL TAVSIF
+===================================================================================
+
+I. UMUMIY MA'LUMOT
+   Loyiha nomi: Andijan — Restoran Boshqaruv Tizimi
+   Texnologiya: Django 6.0, DRF, JWT, PostgreSQL, Flutter (mobil)
+   Rollar: Direktor, Kassir, Ofitsant, Mijoz (Klient)
+   Platforma: Web admin + REST API + Flutter mobil ilova
+
+II. AUTENTIFIKATSIYA
+   - Foydalanuvchi username va parol bilan tizimga kiradi
+   - JWT (access + refresh) token qaytariladi
+   - Access token muddati tugaganda refresh orqali yangilanadi
+   - Har bir so'rovda Authorization: Bearer <token> yuboriladi
+   - Rolga qarab ruxsatlar cheklanadi
+
+===================================================================================
+
+III. DIREKTOR ROLI
+
+   3.1. Login
+       - Direktor o'ziga berilgan login va parol bilan mobil ilovaga kiradi
+       - Endpoint: POST /api/v1/auth/login
+       - Javob: access token, refresh token, user ma'lumotlari (role=director)
+
+   3.2. Ofitsantlar boshqaruvi
+       a) Ro'yxat ko'rish:
+          - Barcha ofitsantlar ismi, telefoni, smenasi, tajribasi
+          - Har bir ofitsantga biriktirilgan stollar raqami
+          - Aktiv va rad etilgan buyurtmalar soni
+          - Endpoint: GET /api/v1/director/waiters
+
+       b) Yangi ofitsant yaratish:
+          - Direktor username, parol, ism, telefon kiritadi
+          - Tizimda UserProfile (role=waiter) va Waiter yaratiladi
+          - Endpoint: POST /api/v1/director/waiters
+
+       c) Ofitsant tahrirlash:
+          - Ism, telefon, smena, tajriba, parol o'zgartirish
+          - Endpoint: PATCH /api/v1/director/waiters/{id}
+
+       d) Ofitsant o'chirish:
+          - Foydalanuvchi deaktivatsiya qilinadi (is_active=false)
+          - Endpoint: DELETE /api/v1/director/waiters/{id}
+
+   3.3. Menyu boshqaruvi
+       a) Kategoriya yaratish:
+          - Nom va tartib raqami kiritiladi
+          - Endpoint: POST /api/v1/menu/categories
+
+       b) Kategoriya tahrirlash/o'chirish:
+          - Endpoint: PATCH/DELETE /api/v1/menu/categories/{id}
+
+       c) Taom qo'shish:
+          - Nom, kategoriya, narx, tavsif, rasm
+          - is_rejectable: true = rad etish mumkin, false = rad etib bo'lmaydi
+          - Endpoint: POST /api/v1/menu/items
+
+       d) Taom tahrirlash/o'chirish:
+          - Endpoint: PATCH/DELETE /api/v1/menu/items/{id}
+
+   3.4. Hisobotlar
+       a) Tushum hisoboti:
+          - Kunlik, haftalik, oylik
+          - Naqd, karta, aralash bo'linishi
+          - Har kunlik tushum taqsimoti
+          - Endpoint: GET /api/v1/director/reports/revenue?period=daily|weekly|monthly
+
+       b) Ofitsantlar hisoboti (umumiy):
+          - Har bir ofitsant: sotgan, rad etilgan, bekor qilingan buyurtmalar soni
+          - Har bir ofitsant tushumi
+          - Endpoint: GET /api/v1/director/reports/waiters?period=daily
+
+       c) Ofitsant batafsil hisoboti:
+          - Qaysi taomlarni nechta sotgan (nomi, soni, summasi)
+          - Qaysi taomlarni qaytargan
+          - Buyurtmalar ro'yxati (stol, holat, sana, summa)
+          - Endpoint: GET /api/v1/director/reports/waiters/{id}?period=daily
+
+   3.5. QR kod
+       - Har bir stol uchun QR kod PNG rasm sifatida yuklab olish
+       - QR ichida stol tokeni bo'ladi
+       - Endpoint: GET /api/v1/director/tables/{id}/qr
+
+   3.6. Dashboard
+       - Umumiy statistika: stollar, buyurtmalar, tushum
+       - Endpoint: GET /api/v1/dashboard/summary
+
+===================================================================================
+
+IV. KASSIR ROLI
+
+   4.1. Login
+       - Kassir o'ziga berilgan login va parol bilan kiradi
+       - Endpoint: POST /api/v1/auth/login (role=cashier)
+
+   4.2. Kunlik sig'im belgilash
+       - Har ish kuni boshida kassir har bir taomning sig'imini (miqdorini) belgilaydi
+       - Masalan: Osh=50 porsiya, Mastava=30 porsiya
+       - Bir vaqtda ko'p mahsulotga sig'im qo'yiladi
+       - Endpoint: POST /api/v1/cashier/daily-stock
+       - Sig'imlarni ko'rish: GET /api/v1/cashier/daily-stock
+
+   4.3. Buyurtma qabul qilish
+       - Kassir yangi kelgan buyurtmalarni ko'radi
+       - Har bir buyurtmada: stol raqami, kim bergan (ofitsant ismi yoki "Mijoz" + ismi)
+       - Buyurtmani qabul qilish = oshxonaga yo'naltirish
+       - Endpoint: GET /api/v1/cashier/orders/pending
+       - Endpoint: POST /api/v1/cashier/orders/{id}/accept
+
+   4.4. Sig'imga qarab cheklash
+       - Buyurtma berilganda har bir taom sig'imi tekshiriladi
+       - Yetarli bo'lsa: sig'im kamayadi
+       - Yetarli bo'lmasa: xato qaytariladi ("Sig'im yetarli emas")
+       - Sig'im 0 bo'lsa: menyu'da ko'rinadi, lekin "Tugagan" yozuvi chiqadi
+
+   4.5. Stol hisobi va chek
+       - Kassir stol raqamiga bosib hisob oladi
+       - Barcha aktiv buyurtmalar va taomlar ro'yxati ko'rsatiladi
+       - Umumiy summa hisoblanadi
+       - Endpoint: GET /api/v1/cashier/tables/{id}/bill
+
+   4.6. Hisobni yopish
+       - Kassir to'lov usulini tanlaydi (naqd/karta/aralash)
+       - Barcha aktiv buyurtmalar yakunlanadi
+       - To'lov yaratiladi
+       - Stol tozalanadi (ofitsantlar ajratiladi)
+       - Endpoint: POST /api/v1/cashier/tables/{id}/close
+
+===================================================================================
+
+V. OFITSANT ROLI
+
+   5.1. Login
+       - Ofitsant direktor bergan login/parol bilan kiradi
+       - Endpoint: POST /api/v1/auth/login (role=waiter)
+
+   5.2. Stollarni ko'rish
+       - Barcha stollar ko'rinadi (boshqa ofitsantlarniki ham)
+       - Har bir stolda: raqam, holat, biriktirilgan ofitsant ismi
+       - Endpoint: GET /api/v1/waiter/all-tables
+
+   5.3. Stolga qo'shilish
+       - Ofitsant bo'sh stolga birikadi
+       - Endpoint: POST /api/v1/tables/{id}/join
+
+   5.4. Buyurtma berish
+       - Ofitsant stol tanlaydi va taomlar ro'yxatini tuzadi
+       - Har bir taomga izoh yozishi mumkin (masalan: "tuzsiz", "achchiqsiz")
+       - Buyurtma kassirga yuboriladi
+       - Agar stolda oldingi buyurtma bo'lsa — avtomatik qabul qilinadi
+       - Endpoint: POST /api/v1/orders
+
+   5.5. Sig'im cheklovi
+       - Agar taom sig'imi yetarli bo'lmasa — xato qaytadi
+       - Ofitsant buni ko'rib boshqa taom taklif qiladi
+
+   5.6. Menyu ko'rish
+       - Ofitsant menyu'ni ko'radi: taom nomi, narxi, sig'imi
+       - is_rejectable maydonini ko'radi (rad etiladi yoki etilMAYDI)
+       - Endpoint: GET /api/v1/menu/items
+
+===================================================================================
+
+VI. MIJOZ (KLIENT) ROLI
+
+   6.1. QR kod skanerlash
+       - Mijoz stoldagi QR kodni telefonida skanerlaydi
+       - Avtomatik ravishda menyu sahifasi ochiladi
+       - Autentifikatsiya talab etilMAYDI
+       - Endpoint: GET /api/v1/public/menu/{qr_token}
+
+   6.2. Menyu ko'rish
+       - Kategoriyalar bo'yicha taomlar ro'yxati
+       - Har bir taomda: nom, tavsif, narx, rasm
+       - is_available: true = buyurtma berish mumkin
+       - is_available: false = "TUGAGAN" yozuvi ko'rsatiladi
+       - is_rejectable ko'rsatiladi (rad etish mumkin yoki yo'q)
+
+   6.3. O'z-o'ziga xizmat
+       - Mijoz "O'z-o'ziga xizmat" tugmasini bosadi
+       - ISMINI yozadi (majburiy)
+       - Taomlarni tanlaydi va miqdor belgilaydi
+       - Buyurtma yuboriladi
+       - Endpoint: POST /api/v1/public/orders/{qr_token}
+
+   6.4. Kassirga yetkazilishi
+       - Buyurtma kassirga quyidagi ma'lumotlar bilan boradi:
+         * Stol raqami
+         * Buyurtma beruvchi: "Mijoz" sifatida (order_source=client)
+         * Mijoz ismi (client_name)
+         * Buyurtma tarkibi va umumiy summa
+
+   6.5. Rad etish
+       - Mijoz rad etiladigan taomlarni o'z buyurtmasidan rad etishi mumkin
+       - Rad etib bo'lmaydigan taomlarni rad etish imkoni YO'Q
+       - Rad etilganda sig'im qaytariladi
+       - Endpoint: POST /api/v1/public/orders/{order_id}/items/{item_id}/reject
+
+   6.6. Buyurtma holati
+       - Mijoz buyurtmasining holatini ko'rishi mumkin
+       - Endpoint: GET /api/v1/public/order-status/{order_id}
+
+===================================================================================
+
+VII. MA'LUMOTLAR BAZASI MODELLARI
+
+   1. UserProfile — foydalanuvchi profili (role, ism, telefon, smena)
+   2. Waiter — ofitsant (UserProfile bilan bog'langan)
+   3. DiningTable — stol (raqam, sig'im, QR token, biriktirilgan ofitsantlar)
+   4. MenuCategory — menyu kategoriyasi (nom, tartib)
+   5. Product — mahsulot (nom, narx, kategoriya, is_rejectable, rasm)
+   6. ProductDailyStock — kunlik sig'im (mahsulot, sana, boshlang'ich, qolgan)
+   7. Order — buyurtma (stol, ofitsant/mijoz, holat, manba, mijoz ismi)
+   8. OrderItem — buyurtma tarkibi (mahsulot, miqdor, holat, izoh)
+   9. Payment — to'lov (buyurtma, usul, summa, kassir)
+   10. ApiToken — eski API uchun token
+
+VIII. API ENDPOINT'LAR JADVALI
+
+   Auth (3):
+   POST /api/v1/auth/login .............. Login
+   POST /api/v1/auth/refresh ............ Token yangilash
+   GET  /api/v1/auth/me ................. Profil
+
+   Direktor (14):
+   GET  /api/v1/director/waiters ........ Ofitsantlar ro'yxati
+   POST /api/v1/director/waiters ........ Ofitsant yaratish
+   PATCH /api/v1/director/waiters/{id} .. Ofitsant tahrirlash
+   DELETE /api/v1/director/waiters/{id} . Ofitsant o'chirish
+   GET  /api/v1/menu/categories ......... Kategoriyalar
+   POST /api/v1/menu/categories ......... Kategoriya yaratish
+   PATCH /api/v1/menu/categories/{id} ... Kategoriya tahrirlash
+   DELETE /api/v1/menu/categories/{id} .. Kategoriya o'chirish
+   GET  /api/v1/menu/items .............. Taomlar
+   POST /api/v1/menu/items .............. Taom yaratish
+   PATCH /api/v1/menu/items/{id} ........ Taom tahrirlash
+   DELETE /api/v1/menu/items/{id} ....... Taom o'chirish
+   GET  /api/v1/director/reports/revenue  Tushum hisoboti
+   GET  /api/v1/director/reports/waiters  Ofitsant hisoboti
+   GET  /api/v1/director/reports/waiters/{id} Batafsil hisobot
+   GET  /api/v1/director/tables/{id}/qr . QR kod rasm
+   GET  /api/v1/dashboard/summary ....... Dashboard
+
+   Kassir (6):
+   GET  /api/v1/cashier/daily-stock ..... Sig'imlar ro'yxati
+   POST /api/v1/cashier/daily-stock ..... Sig'im belgilash
+   GET  /api/v1/cashier/orders/pending .. Kutilayotgan buyurtmalar
+   POST /api/v1/cashier/orders/{id}/accept Buyurtma qabul
+   GET  /api/v1/cashier/tables/{id}/bill  Stol hisobi
+   POST /api/v1/cashier/tables/{id}/close Hisob yopish
+
+   Ofitsant (5):
+   GET  /api/v1/waiter/all-tables ....... Barcha stollar
+   GET  /api/v1/tables .................. Stollar ro'yxati
+   POST /api/v1/tables/{id}/join ........ Stolga qo'shilish
+   POST /api/v1/orders .................. Buyurtma yaratish
+   GET  /api/v1/orders .................. Buyurtmalar ro'yxati
+
+   Mijoz — Public (4):
+   GET  /api/v1/public/menu/{token} ..... QR menyu
+   POST /api/v1/public/orders/{token} ... Mijoz buyurtma
+   GET  /api/v1/public/order-status/{id}  Buyurtma holati
+   POST /api/v1/public/orders/{id}/items/{id}/reject Taom rad etish
+
+   To'lovlar (2):
+   POST /api/v1/payments ................ To'lov yaratish
+   GET  /api/v1/payments ................ To'lovlar ro'yxati
+
+===================================================================================

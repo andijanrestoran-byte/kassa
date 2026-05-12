@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Buyurtmalar{% endblock %}
+{% block page_kicker %}Buyurtmalar{% endblock %}
+{% block hero_title %}Faol buyurtmalar{% endblock %}
+{% block hero_text %}Bu bo'limda faqat faol buyurtmalar bilan ishlanadi. Qabul qilish va tafsilotini ko'rish shu yerda amalga oshiriladi.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Jami faol</span>
+        <strong>{{ orders|length }}</strong>
+    </div>
+    <div class="hero-chip">
+        <span>Yangi</span>
+        <strong>{{ new_orders_count }}</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="section-title">
+            <div>
+                <h2>Operatsion buyurtmalar</h2>
+                <p class="support-text">Faqat buyurtma bilan bog'liq funksiyalar ko'rsatilgan.</p>
+            </div>
+        </div>
+
+        <div class="grid">
+            {% for order in orders %}
+                <div class="card">
+                    <div class="section-title">
+                        <div class="stack">
+                            <span class="pill{% if order.status == 'partially_rejected' %} danger{% elif order.status == 'new' %} warn{% endif %}">{{ order.get_status_display }}</span>
+                            <h2>#{{ order.external_id }}</h2>
+                        </div>
+                        <div class="stack price-block">
+                            <span class="support-text">Jami summa</span>
+                            <span class="price">{{ order.total_amount }}</span>
+                        </div>
+                    </div>
+
+                    <div class="meta">
+                        <div>
+                            <strong>Ofitsant</strong>
+                            {{ order.waiter.full_name }}
+                            {% if order.waiter.phone %}<div class="support-text">{{ order.waiter.phone }}</div>{% endif %}
+                        </div>
+                        <div>
+                            <strong>Stol</strong>
+                            Stol #{{ order.table.number }}{% if order.table.zone %} / {{ order.table.zone }}{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="detail-grid">
+                        <div class="stack">
+                            <span class="support-text">Mahsulotlar soni</span>
+                            <strong style="font-size:1.1rem;color:var(--text);">{{ order.items.count }} ta</strong>
+                        </div>
+                        <div class="stack text-right">
+                            <span class="support-text">Yaratilgan vaqt</span>
+                            <strong style="font-size:1.1rem;color:var(--text);">{{ order.created_at|date:"H:i, d.m.Y" }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <a class="btn ghost" href="{% url 'orders:table_bill' order.table.pk %}">Stol hisobi</a>
+                        <a class="btn secondary" href="{% url 'orders:order_detail' order.pk %}">Ko'rish</a>
+                        <form method="post" action="{% url 'orders:accept_order' order.pk %}">
+                            {% csrf_token %}
+                            <button class="btn" type="submit">Buyurtmani qabul qilish</button>
+                        </form>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="surface empty">
+                    <strong>Hozircha buyurtmalar yo'q</strong>
+                    Mobil platformadan yangi zakaz kelgach shu yerda paydo bo'ladi.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Buyurtma {{ order.external_id }}{% endblock %}
+{% block page_kicker %}Buyurtma boshqaruvi{% endblock %}
+{% block hero_title %}Buyurtma #{{ order.external_id }}{% endblock %}
+{% block hero_text %}Bu sahifada buyurtmaning ofitsanti, stoli va mahsulotlar bo'yicha qabul yoki rad etish qarorlari boshqariladi.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Ofitsant</span>
+        <strong>{{ order.waiter.full_name }}</strong>
+    </div>
+    <div class="hero-chip">
+        <span>Stol</span>
+        <strong>{{ order.table.number }}</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="split-layout">
+            <div class="card">
+                <div class="section-title">
+                    <div class="stack">
+                        <span class="pill{% if order.status == 'partially_rejected' %} danger{% elif order.status == 'new' %} warn{% endif %}">{{ order.get_status_display }}</span>
+                        <h2>Buyurtma tarkibi</h2>
+                    </div>
+                    <div class="stack price-block">
+                        <span class="support-text">Jami summa</span>
+                        <span class="price">{{ order.total_amount }}</span>
+                    </div>
+                </div>
+
+                <div class="items">
+                    {% for item in order.items.all %}
+                        <div class="item">
+                            <div class="item-top">
+                                <div class="stack">
+                                    <h3 style="margin:0;">{{ item.product.name }}</h3>
+                                    <span class="support-text">Mahsulot holati: {{ item.get_status_display }}</span>
+                                </div>
+                                <div class="stack text-right">
+                                    <span class="support-text">Miqdor</span>
+                                    <strong style="font-size:1.05rem;color:var(--text);">{{ item.quantity }} ta</strong>
+                                </div>
+                            </div>
+
+                            <div class="meta">
+                                <div>
+                                    <strong>Narx</strong>
+                                    {{ item.product.price }}
+                                </div>
+                                <div>
+                                    <strong>Jami</strong>
+                                    {{ item.line_total }}
+                                </div>
+                            </div>
+
+                            {% if item.rejection_reason %}
+                                <div class="note-box">
+                                    <strong style="display:block;margin-bottom:6px;color:#92400e;">Rad etish sababi</strong>
+                                    {{ item.rejection_reason }}
+                                </div>
+                            {% endif %}
+
+                            {% if item.status != "rejected" %}
+                                <div class="item-actions">
+                                    <form class="inline" method="post" action="{% url 'orders:reject_item' order.pk item.pk %}">
+                                        {% csrf_token %}
+                                        <input type="text" name="reason" placeholder="Masalan: mahsulot tugagan">
+                                        <button class="btn danger" type="submit">Mahsulotni rad etish</button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="info-panel surface">
+                <div class="section-title">
+                    <div>
+                        <h3>Operatsion ma'lumot</h3>
+                        <p class="support-text">Kassir qaror qabul qilishi uchun buyurtmaning asosiy konteksti.</p>
+                    </div>
+                </div>
+
+                <div class="meta">
+                    <div>
+                        <strong>Ofitsant</strong>
+                        {{ order.waiter.full_name }}
+                    </div>
+                    <div>
+                        <strong>Stol</strong>
+                        {{ order.table.number }}{% if order.table.zone %} / {{ order.table.zone }}{% endif %}
+                    </div>
+                    <div>
+                        <strong>Buyurtma vaqti</strong>
+                        {{ order.created_at|date:"H:i, d.m.Y" }}
+                    </div>
+                    <div>
+                        <strong>Mahsulotlar soni</strong>
+                        {{ order.items.count }} ta
+                    </div>
+                </div>
+
+                {% if order.note %}
+                    <div class="note-box">
+                        <strong style="display:block;margin-bottom:6px;color:#92400e;">Ofitsant izohi</strong>
+                        {{ order.note }}
+                    </div>
+                {% endif %}
+
+                <div class="actions">
+                    <a class="btn ghost" href="{% url 'orders:dashboard' %}">Ro'yxatga qaytish</a>
+                    <form method="post" action="{% url 'orders:accept_order' order.pk %}">
+                        {% csrf_token %}
+                        <button class="btn" type="submit">Barchasini qabul qilish</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

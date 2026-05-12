@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Stol #{{ table.number }} hisobi{% endblock %}
+{% block page_kicker %}Stol hisobi{% endblock %}
+{% block hero_title %}Stol #{{ table.number }}{% endblock %}
+{% block hero_text %}Shu sahifada stol bo'yicha barcha faol buyurtmalar, jami summa va chop etish harakatlari ko'rsatiladi.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Faol buyurtma</span>
+        <strong>{{ orders_count }}</strong>
+    </div>
+    <div class="hero-chip">
+        <span>Jami hisob</span>
+        <strong>{{ total_amount }}</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="section-title">
+            <div>
+                <h2>Hisob tafsiloti</h2>
+                <p class="support-text">
+                    {% if table.zone %}{{ table.zone }}{% else %}Zona belgilanmagan{% endif %}
+                </p>
+            </div>
+            <div class="actions">
+                <a class="btn secondary" href="{% url 'orders:table_print' table.pk %}" target="_blank" rel="noopener">Chekni chiqarish</a>
+                <form method="post" action="{% url 'orders:close_table' table.pk %}">
+                    {% csrf_token %}
+                    <button class="btn" type="submit">Stolni yopish</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat surface">
+                <span class="stat-label">Jami hisob</span>
+                <div class="stat-value">{{ total_amount }}</div>
+            </div>
+            <div class="stat surface">
+                <span class="stat-label">Buyurtmalar</span>
+                <div class="stat-value">{{ orders_count }}</div>
+            </div>
+            <div class="stat surface">
+                <span class="stat-label">Mahsulotlar</span>
+                <div class="stat-value">{{ items_count }}</div>
+            </div>
+        </div>
+
+        <div class="grid">
+            {% for order in active_orders %}
+                <div class="card">
+                    <div class="section-title">
+                        <div class="stack">
+                            <span class="pill{% if order.status == 'partially_rejected' %} danger{% elif order.status == 'new' %} warn{% endif %}">{{ order.get_status_display }}</span>
+                            <h2>#{{ order.external_id }}</h2>
+                        </div>
+                        <div class="stack price-block">
+                            <span class="support-text">Buyurtma summasi</span>
+                            <span class="price">{{ order.total_amount }}</span>
+                        </div>
+                    </div>
+
+                    <div class="meta">
+                        <div>
+                            <strong>Ofitsant</strong>
+                            {{ order.waiter.full_name }}
+                        </div>
+                        <div>
+                            <strong>Stol</strong>
+                            Stol #{{ order.table.number }}{% if order.table.zone %} / {{ order.table.zone }}{% endif %}
+                        </div>
+                        <div>
+                            <strong>Vaqt</strong>
+                            {{ order.created_at|date:"H:i, d.m.Y" }}
+                        </div>
+                    </div>
+
+                    <div class="items">
+                        {% for item in order.items.all %}
+                            <div class="item">
+                                <div class="item-top">
+                                    <div class="stack">
+                                        <h3 style="margin:0;">{{ item.product.name }}</h3>
+                                        <span class="support-text">{{ item.get_status_display }}</span>
+                                    </div>
+                                    <div class="stack text-right">
+                                        <span class="support-text">Soni</span>
+                                        <strong style="font-size:1.05rem;color:var(--text);">{{ item.quantity }} ta</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="surface empty" style="grid-column:1/-1;">
+                    <strong>Faol buyurtma yo'q</strong>
+                    Bu stol bo'yicha hozircha ochiq hisob mavjud emas.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Kirish{% endblock %}
+{% block page_kicker %}Kirish{% endblock %}
+{% block hero_title %}Kassir kirishi{% endblock %}
+{% block hero_text %}Panelga faqat ruxsat etilgan kassirlar kiradi. Buyurtmalar, rad etilgan mahsulotlar va stol kesimidagi oqim shu yerdan boshqariladi.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Xavfsizlik</span>
+        <strong>Himoyalangan kirish</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="section-title">
+            <div>
+                <h2>Tizimga kirish</h2>
+                <p class="support-text">Buyurtmalar paneliga kirish uchun login va parolni kiriting.</p>
+            </div>
+        </div>
+
+        {% if form.errors %}
+            <div class="note-box" style="margin-top:0;background:rgba(255,106,61,0.10);border-color:rgba(255,106,61,0.18);">
+                <strong style="display:block;margin-bottom:6px;color:#ff8c67;">Kirish amalga oshmadi</strong>
+                Login yoki parol noto'g'ri.
+            </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-grid">
+                <div>
+                    <label for="id_username">Login</label>
+                    <input id="id_username" type="text" name="username" required>
+                </div>
+                <div>
+                    <label for="id_password">Parol</label>
+                    <input id="id_password" type="password" name="password" required>
+                </div>
+                <button class="btn" type="submit">Kirish</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

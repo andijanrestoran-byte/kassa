@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Boshqaruv{% endblock %}
+{% block page_kicker %}Boshqaruv{% endblock %}
+{% block hero_title %}Kassir boshqaruv markazi{% endblock %}
+{% block hero_text %}Bu bo'lim umumiy nazorat uchun. Buyurtmalar, rad etilganlar va stollar bo'yicha ishchi jarayonlar alohida sahifalarga ajratilgan.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Faol buyurtmalar</span>
+        <strong>{{ active_orders_count }}</strong>
+    </div>
+    <div class="hero-chip">
+        <span>Stollar</span>
+        <strong>{{ tables_count }}</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="section-title">
+            <div>
+                <h2>Bo'limlar bo'yicha boshqaruv</h2>
+                <p class="support-text">Har bir sahifada faqat o'z vazifasiga tegishli funksiyalar mavjud.</p>
+            </div>
+        </div>
+
+        <div class="grid">
+            <a class="table-card active" href="{% url 'orders:orders_list' %}">
+                <div class="table-card-top">
+                    <div class="stack">
+                        <span class="pill warn">Buyurtmalar</span>
+                        <div class="table-number">{{ active_orders_count }}</div>
+                    </div>
+                </div>
+                <div class="table-meta">
+                    <span>Faol zakazlar ro'yxati</span>
+                    <span>Qabul qilish va ko'rish amallari</span>
+                </div>
+            </a>
+
+            <a class="table-card active" href="{% url 'orders:rejected_orders' %}">
+                <div class="table-card-top">
+                    <div class="stack">
+                        <span class="pill danger">Rad etilganlar</span>
+                        <div class="table-number">{{ rejected_orders_count }}</div>
+                    </div>
+                </div>
+                <div class="table-meta">
+                    <span>Qaysi ofitsant va qaysi stoldan rad etilgani</span>
+                    <span>Muammoli buyurtmalar nazorati</span>
+                </div>
+            </a>
+
+            <a class="table-card active" href="{% url 'orders:tables_overview' %}">
+                <div class="table-card-top">
+                    <div class="stack">
+                        <span class="pill">Stollar</span>
+                        <div class="table-number">{{ tables_count }}</div>
+                    </div>
+                </div>
+                <div class="table-meta">
+                    <span>Stol kesimida hisob va chek</span>
+                    <span>Hisobni yopish va chop etish</span>
+                </div>
+            </a>
+        </div>
+    </div>
+{% endblock %}
