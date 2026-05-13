@@ -362,6 +362,7 @@ class PublicClientOrderView(APIView):
             external_id = f"CLIENT-{table.number}-{get_random_string(16)}"
             order = Order.objects.create(
                 external_id=external_id, waiter=None, table=table,
+                bill_number=d.get("bill_number", 1),
                 note=d.get("note", ""), status=Order.Status.NEW,
                 order_source=Order.OrderSource.CLIENT, client_name=d["client_name"],
             )
@@ -487,19 +488,25 @@ class CashierTableBillView(APIView):
         table = get_object_or_404(DiningTable, pk=table_id)
         active_orders = Order.objects.filter(
             table=table, status__in=ACTIVE_ORDER_STATUSES
-        ).select_related("waiter__user__profile").prefetch_related("items__product").order_by("created_at")
+        ).select_related("waiter__user__profile").prefetch_related("items__product").order_by("bill_number", "created_at")
 
-        items_summary = {}
-        grand_total = Decimal("0")
-        orders_list = []
-
+        shots = {}
         for order in active_orders:
+            bn = order.bill_number
+            if bn not in shots:
+                shots[bn] = {
+                    "bill_number": bn,
+                    "orders": [],
+                    "total": Decimal("0"),
+                    "items": [],
+                }
+            
             order_items = []
             for item in order.items.all():
                 if item.status == OrderItem.Status.REJECTED:
                     continue
                 line = item.line_total
-                grand_total += line
+                shots[bn]["total"] += line
                 order_items.append({
                     "product_name": item.product.name,
                     "quantity": item.quantity,
@@ -507,27 +514,27 @@ class CashierTableBillView(APIView):
                     "line_total": line,
                     "note": item.note,
                 })
-                key = item.product.name
-                items_summary.setdefault(key, {"quantity": 0, "unit_price": item.product.price, "total": Decimal("0")})
-                items_summary[key]["quantity"] += item.quantity
-                items_summary[key]["total"] += line
-
+            
             source = order.client_name if order.order_source == Order.OrderSource.CLIENT else (
                 order.waiter.full_name if order.waiter else "—"
             )
-            orders_list.append({
-                "id": order.id, "source": source,
+            shots[bn]["orders"].append({
+                "id": order.id,
+                "source": source,
                 "order_source": order.order_source,
                 "items": order_items,
+                "total": sum((i["line_total"] for i in order_items), Decimal("0")),
+                "created_at": order.created_at,
             })
+
+        shots_list = sorted(shots.values(), key=lambda x: x["bill_number"])
+        grand_total = sum((s["total"] for s in shots_list), Decimal("0"))
 
         return Response({
             "table": {"id": table.id, "number": table.number},
             "status": table.current_status,
-            "orders_count": len(orders_list),
             "grand_total": grand_total,
-            "items_summary": [{"name": k, **v} for k, v in items_summary.items()],
-            "orders": orders_list,
+            "shots": shots_list,
         })
 
 
@@ -538,15 +545,19 @@ class CashierCloseTableView(APIView):
     def post(self, request, table_id):
         table = get_object_or_404(DiningTable, pk=table_id)
         payment_method = request.data.get("payment_method", "cash")
+        bill_number = request.data.get("bill_number")
+
         if payment_method not in dict(Payment.Method.choices):
             return Response({"detail": "Noto'g'ri to'lov usuli."}, status=400)
 
-        active_orders = Order.objects.filter(
-            table=table, status__in=ACTIVE_ORDER_STATUSES
-        ).prefetch_related("items__product")
+        active_orders = Order.objects.filter(table=table, status__in=ACTIVE_ORDER_STATUSES)
+        if bill_number:
+            active_orders = active_orders.filter(bill_number=bill_number)
+
+        active_orders = active_orders.prefetch_related("items__product")
 
         if not active_orders.exists():
-            return Response({"detail": "Bu stolda aktiv buyurtma yo'q."}, status=400)
+            return Response({"detail": "Bu stolda (yoki shotda) aktiv buyurtma yo'q."}, status=400)
 
         total = Decimal("0")
         payments_created = []
@@ -568,10 +579,13 @@ class CashierCloseTableView(APIView):
                 order.status = Order.Status.COMPLETED
                 order.save(update_fields=["status", "updated_at"])
 
-            table.assigned_waiters.clear()
+            # Faqat hamma shot yopilsa assigned_waiters tozalanadi
+            if not Order.objects.filter(table=table, status__in=ACTIVE_ORDER_STATUSES).exists():
+                table.assigned_waiters.clear()
 
         return Response({
             "table_number": table.number,
+            "bill_number": bill_number,
             "total_amount": total,
             "payment_method": payment_method,
             "orders_closed": active_orders.count(),

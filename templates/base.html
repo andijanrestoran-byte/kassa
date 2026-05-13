@@ -664,6 +664,64 @@
             color: var(--text);
             font-size: 1.28rem;
         }
+
+        /* Shot Styles */
+        .shots-grid {
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+        }
+        .shot-card {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-color: rgba(205, 255, 30, 0.15);
+        }
+        .orders-in-shot {
+            display: grid;
+            gap: 12px;
+        }
+        .order-mini-card {
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .order-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .order-items-list {
+            display: grid;
+            gap: 4px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        .item-line {
+            display: flex;
+            justify-content: space-between;
+            color: #d1d5db;
+        }
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding-top: 8px;
+            font-size: 0.82rem;
+        }
+        .pill.mini {
+            padding: 4px 8px;
+            font-size: 0.7rem;
+        }
+        .link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .link:hover {
+            text-decoration: underline;
+        }
         .auth-shell {
             min-height: 100vh;
             display: grid;

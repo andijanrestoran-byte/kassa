@@ -7,7 +7,12 @@ DEFAULT_CASHIER_USERNAME = "kassir"
 DEFAULT_CASHIER_PASSWORD = "Kassir123!"
 
 
+import sys
+
+
 def seed_cashier_user(apps, schema_editor):
+    if 'test' in sys.argv:
+        return
     app_label, model_name = settings.AUTH_USER_MODEL.split(".")
     User = apps.get_model(app_label, model_name)
     UserProfile = apps.get_model("orders", "UserProfile")

@@ -25,10 +25,11 @@
                 </p>
             </div>
             <div class="actions">
+                <a class="btn secondary" href="/api/v1/director/tables/{{ table.pk }}/qr/" target="_blank">QR Kod</a>
                 <a class="btn secondary" href="{% url 'orders:table_print' table.pk %}" target="_blank" rel="noopener">Chekni chiqarish</a>
-                <form method="post" action="{% url 'orders:close_table' table.pk %}">
+                <form method="post" action="{% url 'orders:close_table' table.pk %}" onsubmit="return confirm('Haqiqatan ham ushbu stoldagi BARCHA shotlarni yopmoqchimisiz?');">
                     {% csrf_token %}
-                    <button class="btn" type="submit">Stolni yopish</button>
+                    <button class="btn danger" type="submit">Hammasini yopish</button>
                 </form>
             </div>
         </div>
@@ -48,47 +49,53 @@
             </div>
         </div>
 
-        <div class="grid">
-            {% for order in active_orders %}
-                <div class="card">
+        <div class="grid shots-grid">
+            {% for shot in shots %}
+                <div class="card shot-card">
                     <div class="section-title">
                         <div class="stack">
-                            <span class="pill{% if order.status == 'partially_rejected' %} danger{% elif order.status == 'new' %} warn{% endif %}">{{ order.get_status_display }}</span>
-                            <h2>#{{ order.external_id }}</h2>
+                            <span class="pill">Shot #{{ shot.bill_number }}</span>
+                            <h2>Jami: {{ shot.total_amount }}</h2>
                         </div>
-                        <div class="stack price-block">
-                            <span class="support-text">Buyurtma summasi</span>
-                            <span class="price">{{ order.total_amount }}</span>
+                        <div class="actions">
+                            <form method="post" action="{% url 'orders:close_table' table.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="bill_number" value="{{ shot.bill_number }}">
+                                <button class="btn" type="submit">Shotni yopish</button>
+                            </form>
                         </div>
                     </div>
 
                     <div class="meta">
                         <div>
-                            <strong>Ofitsant</strong>
-                            {{ order.waiter.full_name }}
+                            <strong>Buyurtmalar soni</strong>
+                            {{ shot.orders|length }} ta
                         </div>
                         <div>
-                            <strong>Stol</strong>
-                            Stol #{{ order.table.number }}{% if order.table.zone %} / {{ order.table.zone }}{% endif %}
-                        </div>
-                        <div>
-                            <strong>Vaqt</strong>
-                            {{ order.created_at|date:"H:i, d.m.Y" }}
+                            <strong>Mahsulotlar</strong>
+                            {{ shot.items_count }} ta
                         </div>
                     </div>
 
-                    <div class="items">
-                        {% for item in order.items.all %}
-                            <div class="item">
-                                <div class="item-top">
-                                    <div class="stack">
-                                        <h3 style="margin:0;">{{ item.product.name }}</h3>
-                                        <span class="support-text">{{ item.get_status_display }}</span>
-                                    </div>
-                                    <div class="stack text-right">
-                                        <span class="support-text">Soni</span>
-                                        <strong style="font-size:1.05rem;color:var(--text);">{{ item.quantity }} ta</strong>
-                                    </div>
+                    <div class="orders-in-shot">
+                        {% for order in shot.orders %}
+                            <div class="order-mini-card">
+                                <div class="order-header">
+                                    <strong>#{{ order.external_id }}</strong>
+                                    <span class="support-text">{{ order.created_at|date:"H:i" }}</span>
+                                    <span class="pill mini{% if order.status == 'partially_rejected' %} danger{% elif order.status == 'new' %} warn{% endif %}">{{ order.get_status_display }}</span>
+                                </div>
+                                <div class="order-items-list">
+                                    {% for item in order.items.all %}
+                                        <div class="item-line">
+                                            <span>{{ item.product.name }} x {{ item.quantity }}</span>
+                                            <span>{{ item.line_total }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="order-footer">
+                                    <span class="support-text">Ofitsant: {{ order.waiter.full_name }}</span>
+                                    <a href="{% url 'orders:order_detail' order.pk %}" class="link">Batafsil</a>
                                 </div>
                             </div>
                         {% endfor %}
@@ -96,7 +103,7 @@
                 </div>
             {% empty %}
                 <div class="surface empty" style="grid-column:1/-1;">
-                    <strong>Faol buyurtma yo'q</strong>
+                    <strong>Faol shotlar yo'q</strong>
                     Bu stol bo'yicha hozircha ochiq hisob mavjud emas.
                 </div>
             {% endfor %}

@@ -276,7 +276,7 @@ class OrdersListCreateView(APIView):
         validated = serializer.validated_data
         table = get_object_or_404(DiningTable, pk=validated["table_id"])
         waiter = ensure_waiter_instance(request.user)
-        auto_accept = table_has_open_bill(table)
+        auto_accept = True  # Ofitsant zakaz urgan zahoti oshxonaga boradi (kassir tasdiqlashi shart emas)
         today = timezone.localdate()
 
         with transaction.atomic():
@@ -285,6 +285,7 @@ class OrdersListCreateView(APIView):
                 external_id=external_id,
                 waiter=waiter,
                 table=table,
+                bill_number=validated.get("bill_number", 1),
                 note=validated.get("note", ""),
                 status=Order.Status.ACCEPTED if auto_accept else Order.Status.NEW,
                 order_source=Order.OrderSource.WAITER,

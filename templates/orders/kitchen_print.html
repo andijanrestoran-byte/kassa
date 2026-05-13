@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oshxona cheki #{{ order.external_id }}</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Courier New", Courier, monospace;
+            background: white;
+            color: black;
+            font-size: 14px;
+        }
+        .receipt {
+            width: 80mm;
+            padding: 5mm;
+            margin: 0 auto;
+        }
+        .center { text-align: center; }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 0 5px;
+        }
+        .line {
+            border-top: 1px dashed black;
+            margin: 10px 0;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        .items {
+            margin-top: 10px;
+        }
+        .item {
+            font-size: 16px;
+            margin: 8px 0;
+            font-weight: bold;
+        }
+        .note {
+            font-size: 13px;
+            font-style: italic;
+            margin-left: 10px;
+            font-weight: normal;
+        }
+        @media print {
+            .actions { display: none; }
+        }
+        .actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <div class="center">
+            <div class="title">OSHXONA CHEKI</div>
+            <div>Stol: #{{ order.table.number }} {% if order.table.zone %}({{ order.table.zone }}){% endif %}</div>
+            <div>Shot: #{{ order.bill_number }}</div>
+            <div>Vaqt: {{ order.created_at|date:"H:i" }}</div>
+        </div>
+
+        <div class="line"></div>
+
+        <div class="center">
+            <strong>Buyurtma: #{{ order.external_id }}</strong><br>
+            Ofitsant: {{ order.waiter.full_name }}
+        </div>
+
+        <div class="line"></div>
+
+        <div class="items">
+            {% for item in order.items.all %}
+                <div class="item">
+                    {{ item.product.name }} x {{ item.quantity }}
+                    {% if item.note %}
+                        <div class="note">Izoh: {{ item.note }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="line"></div>
+        
+        {% if order.note %}
+            <div class="row">
+                <strong>Umumiy izoh:</strong>
+                <span>{{ order.note }}</span>
+            </div>
+            <div class="line"></div>
+        {% endif %}
+
+        <div class="actions">
+            <button class="btn" onclick="window.print()">Chop etish</button>
+            <button class="btn" onclick="window.close()">Yopish</button>
+        </div>
+    </div>
+
+    {% if auto_print %}
+        <script>
+            window.addEventListener("load", function () {
+                window.print();
+                // Ba'zida avtomatik yopish kerak bo'lishi mumkin
+                // setTimeout(function() { window.close(); }, 1000);
+            });
+        </script>
+    {% endif %}
+</body>
+</html>

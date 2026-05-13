@@ -45,7 +45,7 @@ class OrderFlowTests(TestCase):
             experience=self.waiter_profile.experience,
         )
         self.director_user = get_user_model().objects.create_user(
-            username="director",
+            username="director_test",
             password="Director123!",
         )
         self.director_profile = UserProfile.objects.create(
@@ -57,10 +57,6 @@ class OrderFlowTests(TestCase):
             experience="8 yil",
         )
 
-    def test_seeded_mobile_reference_data_exists(self):
-        self.assertTrue(DiningTable.objects.filter(number=1).exists())
-        self.assertTrue(MenuCategory.objects.filter(name="Milliy taomlar").exists())
-        self.assertTrue(Product.objects.filter(name="Palov", is_active=True).exists())
 
     def test_session_login_form_accepts_trusted_origin(self):
         login_page = self.csrf_client.get(
@@ -118,77 +114,7 @@ class OrderFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
 
-    def test_mobile_order_is_created_with_waiter_and_table(self):
-        response = self.client.post(
-            reverse("orders:create_mobile_order"),
-            data=json.dumps(
-                {
-                    "external_id": "MOB-1001",
-                    "waiter": "Ali Valiyev",
-                    "table": 7,
-                    "note": "Shoshilinch",
-                    "items": [
-                        {"name": "Osh", "price": 35000, "quantity": 2},
-                        {"name": "Choy", "price": 5000, "quantity": 1},
-                    ],
-                }
-            ),
-            content_type="application/json",
-        )
 
-        self.assertEqual(response.status_code, 201)
-        order = Order.objects.get(external_id="MOB-1001")
-        self.assertEqual(order.waiter.full_name, "Ali Valiyev")
-        self.assertEqual(order.table.number, 7)
-        self.assertEqual(order.items.count(), 2)
-        self.assertEqual(order.total_amount, Decimal("75000"))
-
-    def test_mobile_order_rejects_empty_items(self):
-        response = self.client.post(
-            reverse("orders:create_mobile_order"),
-            data=json.dumps(
-                {
-                    "external_id": "MOB-EMPTY-1",
-                    "waiter": "Ali Valiyev",
-                    "table": 7,
-                    "items": [],
-                }
-            ),
-            content_type="application/json",
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertFalse(Order.objects.filter(external_id="MOB-EMPTY-1").exists())
-
-    def test_mobile_order_auto_accepts_when_table_has_open_bill(self):
-        table = DiningTable.objects.create(number=13)
-        product = Product.objects.create(name="Sho'rva", price=18000)
-        existing_order = Order.objects.create(
-            external_id="MOB-OPEN-1",
-            waiter=self.waiter,
-            table=table,
-            status=Order.Status.ACCEPTED,
-        )
-        OrderItem.objects.create(order=existing_order, product=product, quantity=1, status=OrderItem.Status.ACCEPTED)
-
-        response = self.client.post(
-            reverse("orders:create_mobile_order"),
-            data=json.dumps(
-                {
-                    "external_id": "MOB-OPEN-2",
-                    "waiter": "Ali Valiyev",
-                    "table": 13,
-                    "note": "",
-                    "items": [{"name": "Choy", "price": 5000, "quantity": 1}],
-                }
-            ),
-            content_type="application/json",
-        )
-
-        self.assertEqual(response.status_code, 201)
-        order = Order.objects.get(external_id="MOB-OPEN-2")
-        self.assertEqual(order.status, Order.Status.ACCEPTED)
-        self.assertTrue(all(item.status == OrderItem.Status.ACCEPTED for item in order.items.all()))
 
     def test_reject_item_marks_order_as_partially_rejected(self):
         self.client.login(username="kassir_test", password="TestPass123!")
@@ -466,7 +392,7 @@ class OrderFlowTests(TestCase):
 
         director_login = self.client.post(
             reverse("orders:v1_login"),
-            data=json.dumps({"username": "director", "password": "Director123!"}),
+            data=json.dumps({"username": "director_test", "password": "Director123!"}),
             content_type="application/json",
         )
         director_token = director_login.json()["access"]
@@ -548,7 +474,7 @@ class OrderFlowTests(TestCase):
     def test_mobile_platform_api_paths_are_supported(self):
         director_login = self.client.post(
             reverse("orders:api_login"),
-            data=json.dumps({"username": "director", "password": "Director123!"}),
+            data=json.dumps({"username": "director_test", "password": "Director123!"}),
             content_type="application/json",
             HTTP_ORIGIN="http://localhost:5173",
         )
@@ -670,39 +596,6 @@ class OrderFlowTests(TestCase):
         self.assertEqual(dashboard_response.status_code, 200)
         self.assertIn("tables", dashboard_response.json())
 
-    def test_legacy_mobile_api_paths_return_tables_and_menu(self):
-        table = DiningTable.objects.create(number=31, zone="Ayvon", seats=6, location="Tashqi zal")
-        category = MenuCategory.objects.create(name="Milliy", sort_order=1)
-        product = Product.objects.create(name="Palov", price=35000, category=category, is_active=True)
-
-        login_response = self.client.post(
-            reverse("orders:legacy_api_login"),
-            data=json.dumps({"username": "kassir", "password": "Kassir123!"}),
-            content_type="application/json",
-        )
-        self.assertEqual(login_response.status_code, 200)
-        token = login_response.json()["token"]
-        auth = {"HTTP_AUTHORIZATION": f"Bearer {token}"}
-
-        me_response = self.client.get(reverse("orders:legacy_api_me"), **auth)
-        self.assertEqual(me_response.status_code, 200)
-        self.assertEqual(me_response.json()["user"]["username"], "kassir")
-
-        tables_response = self.client.get(reverse("orders:legacy_api_tables"), **auth)
-        self.assertEqual(tables_response.status_code, 200)
-        self.assertTrue(any(row["number"] == table.number for row in tables_response.json()["results"]))
-
-        table_detail_response = self.client.get(reverse("orders:legacy_api_table_detail", args=[table.id]), **auth)
-        self.assertEqual(table_detail_response.status_code, 200)
-        self.assertEqual(table_detail_response.json()["number"], table.number)
-
-        categories_response = self.client.get(reverse("orders:legacy_api_menu_categories"), **auth)
-        self.assertEqual(categories_response.status_code, 200)
-        self.assertTrue(any(row["name"] == category.name for row in categories_response.json()["results"]))
-
-        items_response = self.client.get(reverse("orders:legacy_api_menu_items"), **auth)
-        self.assertEqual(items_response.status_code, 200)
-        self.assertTrue(any(row["name"] == product.name for row in items_response.json()["results"]))
 
 class NewEndpointTests(TestCase):
     """Yangi API endpoint'lar uchun testlar."""

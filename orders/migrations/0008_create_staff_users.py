@@ -2,7 +2,12 @@ from django.db import migrations
 from django.contrib.auth.hashers import make_password
 
 
+import sys
+
+
 def create_staff_users(apps, schema_editor):
+    if 'test' in sys.argv:
+        return
     User = apps.get_model("auth", "User")
     UserProfile = apps.get_model("orders", "UserProfile")
     

@@ -17,22 +17,8 @@ urlpatterns = [
     path("orders/<int:pk>/items/<int:item_id>/reject/", views.reject_item, name="reject_item"),
     path("tables/<int:table_id>/", views.table_bill, name="table_bill"),
     path("tables/<int:table_id>/print/", views.table_print, name="table_print"),
+    path("orders/<int:pk>/kitchen-print/", views.kitchen_print, name="kitchen_print"),
     path("tables/<int:table_id>/close/", views.close_table, name="close_table"),
-
-    # ── Legacy API (eski Bearer token) ──
-    path("api/login/", views.api_login, name="legacy_api_login"),
-    path("api/logout/", views.api_logout, name="legacy_api_logout"),
-    path("api/me/", views.api_me, name="legacy_api_me"),
-    path("api/orders/", views.api_orders, name="legacy_api_orders"),
-    path("api/orders/<int:pk>/", views.api_order_detail, name="legacy_api_order_detail"),
-    path("api/orders/<int:pk>/accept/", views.api_accept_order, name="legacy_api_accept_order"),
-    path("api/orders/<int:pk>/items/<int:item_id>/reject/", views.api_reject_order_item, name="legacy_api_reject_order_item"),
-    path("api/orders/rejected/", views.api_rejected_orders, name="legacy_api_rejected_orders"),
-    path("api/menu/categories/", views.api_menu_categories, name="legacy_api_menu_categories"),
-    path("api/menu/items/", views.api_menu_items, name="legacy_api_menu_items"),
-    path("api/tables/", views.api_tables, name="legacy_api_tables"),
-    path("api/tables/<int:table_id>/", views.api_table_detail, name="legacy_api_table_detail"),
-    path("api/mobile-orders/", views.create_mobile_order, name="create_mobile_order"),
 
     # ── API v1 — Auth ──
     path("api/v1/auth/login", api_views.LoginView.as_view(), name="v1_login"),

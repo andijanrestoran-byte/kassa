@@ -190,6 +190,7 @@ class CreateOrderItemInputSerializer(serializers.Serializer):
 
 class CreateOrderSerializer(serializers.Serializer):
     table_id = serializers.IntegerField()
+    bill_number = serializers.IntegerField(min_value=1, max_value=10, required=False, default=1)
     note = serializers.CharField(allow_blank=True, required=False, default="")
     items = CreateOrderItemInputSerializer(many=True)
 
@@ -202,6 +203,7 @@ class CreateOrderSerializer(serializers.Serializer):
 class ClientOrderSerializer(serializers.Serializer):
     """Mijoz o'z-o'ziga xizmat — auth kerak emas."""
     client_name = serializers.CharField(max_length=100)
+    bill_number = serializers.IntegerField(min_value=1, max_value=10, required=False, default=1)
     note = serializers.CharField(allow_blank=True, required=False, default="")
     items = CreateOrderItemInputSerializer(many=True)
 
@@ -305,6 +307,7 @@ def serialize_order(order: Order, include_items: bool = True):
     payload = {
         "id": order.id,
         "table": {"id": order.table.id, "number": order.table.number},
+        "bill_number": order.bill_number,
         "waiter": waiter_user_payload(order.waiter),
         "status": map_order_status(order),
         "note": order.note,

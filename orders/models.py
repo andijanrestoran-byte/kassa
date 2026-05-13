@@ -205,6 +205,10 @@ class Order(models.Model):
         help_text="Mijoz o'z-o'ziga xizmat bersa null bo'ladi.",
     )
     table = models.ForeignKey(DiningTable, on_delete=models.PROTECT, related_name="orders")
+    bill_number = models.PositiveSmallIntegerField(
+        default=1,
+        help_text="Stoldagi shot raqami (1-10). Bitta stolda bir nechta shot bo'lishi mumkin.",
+    )
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.NEW)
     note = models.TextField(blank=True)
     status_reason = models.CharField(max_length=255, blank=True)
