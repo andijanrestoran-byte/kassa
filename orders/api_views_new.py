@@ -53,7 +53,7 @@ def ensure_profile(user):
 # ============================================================
 
 class DirectorWaitersView(APIView):
-    permission_classes = [IsDirector]
+    permission_classes = [IsDirectorOrCashier]
 
     def get(self, request):
         waiters = User.objects.filter(
@@ -98,7 +98,7 @@ class DirectorWaitersView(APIView):
 
 
 class DirectorWaiterDetailView(APIView):
-    permission_classes = [IsDirector]
+    permission_classes = [IsDirectorOrCashier]
 
     def patch(self, request, user_id):
         serializer = WaiterUpdateSerializer(data=request.data)

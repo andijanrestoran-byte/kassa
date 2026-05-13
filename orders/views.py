@@ -217,3 +217,58 @@ def reject_item(request: HttpRequest, pk: int, item_id: int):
     order.status = Order.Status.PARTIALLY_REJECTED
     order.save(update_fields=["status", "updated_at"])
     return redirect("orders:order_detail", pk=pk)
+
+
+@require_GET
+@login_required
+def waiters_list(request: HttpRequest):
+    """Ofitsantlar ro'yxati (Kassir va Direktor uchun)."""
+    # Bu view hozircha faqat ro'yxatni ko'rsatadi. 
+    # To'liq CRUD (qoshish/o'chirish) API orqali yoki keyingi qadamda qo'shiladi.
+    waiters = UserProfile.objects.filter(role=UserProfile.Role.WAITER).select_related('user')
+    return render(request, "orders/waiters_list.html", {
+        "waiters": waiters,
+        **_base_context()
+    })
+
+
+@require_POST
+@login_required
+def create_waiter(request: HttpRequest):
+    """Yangi ofitsant qo'shish (Web orqali)."""
+    # Faqat Direktor yoki Kassir qo'sha oladi
+    profile = getattr(request.user, "profile", None)
+    if not profile or profile.role not in ['director', 'cashier']:
+        return HttpResponseBadRequest("Ruxsat berilmagan")
+
+    username = request.POST.get("username")
+    password = request.POST.get("password")
+    full_name = request.POST.get("full_name")
+    
+    if not all([username, password, full_name]):
+        return HttpResponseBadRequest("Barcha maydonlarni to'ldiring")
+
+    from django.contrib.auth.models import User
+    from django.contrib.auth.hashers import make_password
+    
+    if User.objects.filter(username=username).exists():
+        return HttpResponseBadRequest("Bunday login band")
+
+    with transaction.atomic():
+        user = User.objects.create(
+            username=username,
+            password=make_password(password),
+            is_active=True
+        )
+        UserProfile.objects.create(
+            user=user,
+            full_name=full_name,
+            role=UserProfile.Role.WAITER
+        )
+        # Shuningdek legacy Waiter modeliga ham qo'shamiz (agar kerak bo'lsa)
+        Waiter.objects.create(
+            user=user,
+            full_name=full_name
+        )
+
+    return redirect("orders:waiters_list")

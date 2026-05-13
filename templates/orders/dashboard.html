@@ -63,6 +63,19 @@
                     <span>Hisobni yopish va chop etish</span>
                 </div>
             </a>
+
+            <a class="table-card active" href="{% url 'orders:waiters_list' %}">
+                <div class="table-card-top">
+                    <div class="stack">
+                        <span class="pill">Xodimlar</span>
+                        <div class="table-number">{{ waiters_count|default:"+" }}</div>
+                    </div>
+                </div>
+                <div class="table-meta">
+                    <span>Ofitsantlarni boshqarish</span>
+                    <span>Login va parollarni berish</span>
+                </div>
+            </a>
         </div>
     </div>
 {% endblock %}

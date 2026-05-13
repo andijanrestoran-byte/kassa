@@ -18,6 +18,8 @@ urlpatterns = [
     path("tables/<int:table_id>/", views.table_bill, name="table_bill"),
     path("tables/<int:table_id>/print/", views.table_print, name="table_print"),
     path("orders/<int:pk>/kitchen-print/", views.kitchen_print, name="kitchen_print"),
+    path("waiters/", views.waiters_list, name="waiters_list"),
+    path("waiters/create/", views.create_waiter, name="create_waiter"),
     path("tables/<int:table_id>/close/", views.close_table, name="close_table"),
 
     # ── API v1 — Auth ──

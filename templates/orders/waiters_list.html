@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Ofitsantlar{% endblock %}
+{% block page_kicker %}Xodimlar boshqaruvi{% endblock %}
+{% block hero_title %}Ofitsantlar ro'yxati{% endblock %}
+{% block hero_text %}Bu yerda siz ofitsantlarni qo'shishingiz, ularning login va parollarini boshqarishingiz mumkin.{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="split-layout">
+            <!-- Ro'yxat -->
+            <div class="surface content-panel">
+                <div class="section-title">
+                    <h2>Mavjud ofitsantlar</h2>
+                </div>
+                <div class="items">
+                    {% for waiter in waiters %}
+                        <div class="item">
+                            <div class="item-top">
+                                <div>
+                                    <div class="pill mini">{{ waiter.user.username }}</div>
+                                    <h3 style="margin: 8px 0 4px;">{{ waiter.full_name }}</h3>
+                                    <div class="support-text">ID: #{{ waiter.user.id }}</div>
+                                </div>
+                                <div class="text-right">
+                                    <strong>Status</strong>
+                                    <span class="pill">Faol</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="empty">
+                            <strong>Ofitsantlar yo'q</strong>
+                            Hali birorta ham ofitsant qo'shilmagan.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Qo'shish formasi -->
+            <div class="surface content-panel">
+                <div class="section-title">
+                    <h2>Yangi ofitsant qo'shish</h2>
+                </div>
+                <form method="post" action="{% url 'orders:create_waiter' %}" class="form-grid">
+                    {% csrf_token %}
+                    <div>
+                        <label for="full_name">F.I.SH</label>
+                        <input type="text" id="full_name" name="full_name" placeholder="Masalan: Ali Valiyev" required>
+                    </div>
+                    <div>
+                        <label for="username">Login (username)</label>
+                        <input type="text" id="username" name="username" placeholder="waiter_ali" required>
+                    </div>
+                    <div>
+                        <label for="password">Parol</label>
+                        <input type="password" id="password" name="password" placeholder="********" required>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <button type="submit" class="btn" style="width: 100%;">Saqlash va qo'shish</button>
+                    </div>
+                </form>
+                <div class="note-box" style="margin-top: 24px;">
+                    <strong style="color: var(--warn); display: block; margin-bottom: 8px;">Eslatma:</strong>
+                    <p style="margin: 0; font-size: 0.88rem; color: #9ea4ac;">
+                        Yangi ofitsant qo'shilgandan so'ng, u mobil ilova orqali o'z logini va paroli bilan tizimga kira oladi.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

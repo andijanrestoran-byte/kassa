@@ -851,6 +851,10 @@
                         <span class="nav-glyph table"></span>
                         <span>Stollar</span>
                     </a>
+                    <a class="nav-item{% if request.resolver_match.url_name == 'waiters_list' %} active{% endif %}" href="{% url 'orders:waiters_list' %}">
+                        <span class="nav-glyph users"></span>
+                        <span>Xodimlar</span>
+                    </a>
                     <a class="nav-item{% if request.resolver_match.url_name == 'dashboard' %} active{% endif %}" href="{% url 'orders:dashboard' %}">
                         <span class="nav-glyph grid"></span>
                         <span>Boshqaruv</span>
