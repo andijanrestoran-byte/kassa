@@ -403,7 +403,7 @@ class PublicOrderStatusView(APIView):
 # ============================================================
 
 class WaiterAllTablesView(APIView):
-    permission_classes = [IsWaiter]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         tables = DiningTable.objects.prefetch_related("assigned_waiters__profile").all()
