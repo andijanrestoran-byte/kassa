@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
 {% block title %}Stollar{% endblock %}
+{% block refresh %}<meta http-equiv="refresh" content="20">{% endblock %}
 {% block page_kicker %}Stollar{% endblock %}
 {% block hero_title %}Stollar bo'yicha hisob{% endblock %}
-{% block hero_text %}Bu bo'lim stol kesimida ishlash uchun. Har bir stolga kirib umumiy hisob, chek va yopish funksiyalari bajariladi.{% endblock %}
+{% block hero_text %}Har bir stolda nechta hisob borligi ko'rinib turadi. Tafsilotlar uchun stol ustiga bosing. Sahifa har 20 soniyada yangilanadi.{% endblock %}
 {% block hero_side %}
     <div class="hero-chip">
         <span>Stollar</span>
@@ -16,40 +17,35 @@
         <div class="section-title">
             <div>
                 <h2>Stollar hisoboti</h2>
-                <p class="support-text">Faqat stolga tegishli funksiyalar shu sahifada jamlangan.</p>
+                <p class="support-text">Stol ustiga bossangiz, o'sha stoldagi hisoblar tafsiloti ochiladi.</p>
             </div>
         </div>
 
         <div class="table-grid">
             {% for entry in tables %}
-                <a class="table-card{% if entry.orders_count %} active{% endif %}" href="{% url 'orders:table_bill' entry.table.pk %}">
+                <a class="table-card{% if entry.shots %} active{% endif %}" href="{% url 'orders:table_bill' entry.table.pk %}">
                     <div class="table-card-top">
                         <div class="stack">
                             <span class="pill">Stol</span>
                             <div class="table-number">#{{ entry.table.number }}</div>
                         </div>
                         <div class="stack price-block">
-                            <span class="support-text">Hisob</span>
+                            <span class="support-text">Jami hisob</span>
                             <div class="table-total">{{ entry.total_amount }}</div>
                         </div>
                     </div>
                     <div class="table-meta">
-                        <span>{{ entry.table.zone|default:"Zona belgilanmagan" }}</span>
-                        <strong style="color:var(--accent);">{{ entry.shots|length }} ta faol shot</strong>
+                        <strong style="color:var(--accent-strong);font-size:1.05rem;">
+                            {{ entry.shots|length }} ta hisob
+                        </strong>
                         <span>{{ entry.items_count }} ta mahsulot</span>
-                    </div>
-                    <div class="support-text">
-                        {% if entry.latest_order %}
-                            Oxirgi buyurtma: #{{ entry.latest_order.external_id }}
-                        {% else %}
-                            Hozircha buyurtma yo'q
-                        {% endif %}
+                        <span>{% if entry.shots %}Tafsilot uchun bosing{% else %}Bo'sh stol{% endif %}</span>
                     </div>
                 </a>
             {% empty %}
                 <div class="surface empty" style="grid-column:1/-1;">
                     <strong>Stollar topilmadi</strong>
-                    Avval admin panelda `DiningTable` yozuvlarini kiriting.
+                    Avval admin panelda stollar yozuvlarini kiriting.
                 </div>
             {% endfor %}
         </div>
