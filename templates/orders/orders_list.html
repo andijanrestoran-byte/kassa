@@ -27,37 +27,32 @@
         <div class="grid">
             {% for order in orders %}
                 <div class="card">
-                    <div class="section-title">
-                        <div class="stack">
-                            <span class="pill{% if order.status == 'partially_rejected' %} danger{% elif order.status == 'new' %} warn{% endif %}">{{ order.get_status_display }}</span>
-                            <h2>#{{ order.external_id }}</h2>
+                    <div class="section-title" style="align-items:center;">
+                        <span class="pill{% if order.status == 'partially_rejected' %} danger{% elif order.status == 'new' %} warn{% endif %}">{{ order.get_status_display }}</span>
+                        <span class="support-text">{{ order.created_at|date:"H:i · d.m.Y" }}</span>
+                    </div>
+
+                    <div class="order-title-row">
+                        <div class="stack" style="gap:3px;">
+                            <span class="support-text">Buyurtma</span>
+                            <h2 style="margin:0;">Stol #{{ order.table.number }}</h2>
+                            {% if order.table.zone %}<span class="support-text">{{ order.table.zone }}</span>{% endif %}
                         </div>
-                        <div class="stack price-block">
+                        <div class="stack price-block" style="gap:3px;">
                             <span class="support-text">Jami summa</span>
                             <span class="price">{{ order.total_amount }}</span>
                         </div>
                     </div>
 
-                    <div class="meta">
-                        <div>
-                            <strong>Ofitsant</strong>
-                            {{ order.waiter.full_name }}
-                            {% if order.waiter.phone %}<div class="support-text">{{ order.waiter.phone }}</div>{% endif %}
+                    <div class="info-rows">
+                        <div class="info-cell">
+                            <span class="support-text">Ofitsant</span>
+                            <strong>{{ order.waiter.full_name|default:"—" }}</strong>
+                            {% if order.waiter.phone %}<span class="support-text">{{ order.waiter.phone }}</span>{% endif %}
                         </div>
-                        <div>
-                            <strong>Stol</strong>
-                            Stol #{{ order.table.number }}{% if order.table.zone %} / {{ order.table.zone }}{% endif %}
-                        </div>
-                    </div>
-
-                    <div class="detail-grid">
-                        <div class="stack">
-                            <span class="support-text">Mahsulotlar soni</span>
-                            <strong style="font-size:1.1rem;color:var(--text);">{{ order.items.count }} ta</strong>
-                        </div>
-                        <div class="stack text-right">
-                            <span class="support-text">Yaratilgan vaqt</span>
-                            <strong style="font-size:1.1rem;color:var(--text);">{{ order.created_at|date:"H:i, d.m.Y" }}</strong>
+                        <div class="info-cell">
+                            <span class="support-text">Mahsulotlar</span>
+                            <strong>{{ order.items.count }} ta</strong>
                         </div>
                     </div>
 

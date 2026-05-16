@@ -170,6 +170,23 @@
         .meta { display: flex; gap: 22px; flex-wrap: wrap; color: var(--muted); font-size: 0.9rem; margin: 14px 0; }
         .meta strong { display: block; color: var(--text); margin-bottom: 3px; }
 
+        .order-title-row {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            gap: 16px;
+        }
+        .order-title-row h2 { font-size: 1.3rem; letter-spacing: -0.01em; }
+        .info-rows {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+            background: var(--line); border: 1px solid var(--line);
+            border-radius: 13px; overflow: hidden;
+        }
+        .info-cell {
+            display: grid; gap: 4px; padding: 13px 15px; background: var(--panel-soft);
+            font-size: 0.92rem;
+        }
+        .info-cell .support-text { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; }
+        .info-cell strong { color: var(--text); font-size: 1.02rem; }
+
         .pill {
             display: inline-flex; align-items: center; padding: 5px 13px; border-radius: 999px;
             background: var(--accent-soft); color: var(--accent-strong);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oshxona cheki #{{ order.external_id }}</title>
+    <title>Oshxona cheki #{{ order.id }}</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -72,7 +72,7 @@
         <div class="line"></div>
 
         <div class="center">
-            <strong>Buyurtma: #{{ order.external_id }}</strong><br>
+            <strong>Buyurtma: #{{ order.id }}</strong><br>
             Ofitsant: {{ order.waiter.full_name }}
         </div>
 

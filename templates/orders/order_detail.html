@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Buyurtma {{ order.external_id }}{% endblock %}
+{% block title %}Buyurtma #{{ order.id }}{% endblock %}
 {% block page_kicker %}Buyurtma boshqaruvi{% endblock %}
-{% block hero_title %}Buyurtma #{{ order.external_id }}{% endblock %}
+{% block hero_title %}Stol #{{ order.table.number }} — buyurtma #{{ order.id }}{% endblock %}
 {% block hero_text %}Bu sahifada buyurtmaning ofitsanti, stoli va mahsulotlar bo'yicha qabul yoki rad etish qarorlari boshqariladi.{% endblock %}
 {% block hero_side %}
     <div class="hero-chip">

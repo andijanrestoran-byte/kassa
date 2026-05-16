@@ -115,7 +115,7 @@
             {% for order in active_orders %}
                 <div class="item">
                     <div class="item-top">
-                        <strong>#{{ order.external_id }}</strong>
+                        <strong>Buyurtma #{{ order.id }}</strong>
                         <span>{{ order.total_amount }}</span>
                     </div>
                     <div class="muted">{{ order.waiter.full_name }} / {{ order.created_at|date:"H:i, d.m.Y" }}</div>
