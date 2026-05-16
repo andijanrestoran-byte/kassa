@@ -1,16 +1,17 @@
 {% extends "base.html" %}
 
 {% block title %}Stol #{{ table.number }} hisobi{% endblock %}
+{% block refresh %}<meta http-equiv="refresh" content="20">{% endblock %}
 {% block page_kicker %}Stol hisobi{% endblock %}
 {% block hero_title %}Stol #{{ table.number }}{% endblock %}
-{% block hero_text %}Shu sahifada stol bo'yicha barcha faol buyurtmalar, jami summa va chop etish harakatlari ko'rsatiladi.{% endblock %}
+{% block hero_text %}Shu stoldagi barcha hisoblar va ularning tafsilotlari. Sahifa har 20 soniyada yangilanadi.{% endblock %}
 {% block hero_side %}
     <div class="hero-chip">
-        <span>Faol buyurtma</span>
-        <strong>{{ orders_count }}</strong>
+        <span>Hisoblar</span>
+        <strong>{{ shots|length }}</strong>
     </div>
     <div class="hero-chip">
-        <span>Jami hisob</span>
+        <span>Jami summa</span>
         <strong>{{ total_amount }}</strong>
     </div>
 {% endblock %}
@@ -19,15 +20,12 @@
     <div class="page-shell">
         <div class="section-title">
             <div>
-                <h2>Hisob tafsiloti</h2>
-                <p class="support-text">
-                    {% if table.zone %}{{ table.zone }}{% else %}Zona belgilanmagan{% endif %}
-                </p>
+                <h2>Stol #{{ table.number }} — hisob tafsiloti</h2>
+                <p class="support-text">Ushbu stolda {{ shots|length }} ta faol hisob bor.</p>
             </div>
             <div class="actions">
-                <a class="btn secondary" href="/api/v1/director/tables/{{ table.pk }}/qr/" target="_blank">QR Kod</a>
                 <a class="btn secondary" href="{% url 'orders:table_print' table.pk %}" target="_blank" rel="noopener">Chekni chiqarish</a>
-                <form method="post" action="{% url 'orders:close_table' table.pk %}" onsubmit="return confirm('Haqiqatan ham ushbu stoldagi BARCHA shotlarni yopmoqchimisiz?');">
+                <form method="post" action="{% url 'orders:close_table' table.pk %}" onsubmit="return confirm('Ushbu stoldagi BARCHA hisoblarni yopmoqchimisiz?');">
                     {% csrf_token %}
                     <button class="btn danger" type="submit">Hammasini yopish</button>
                 </form>
@@ -36,12 +34,12 @@
 
         <div class="stats">
             <div class="stat surface">
-                <span class="stat-label">Jami hisob</span>
+                <span class="stat-label">Jami summa</span>
                 <div class="stat-value">{{ total_amount }}</div>
             </div>
             <div class="stat surface">
-                <span class="stat-label">Buyurtmalar</span>
-                <div class="stat-value">{{ orders_count }}</div>
+                <span class="stat-label">Hisoblar soni</span>
+                <div class="stat-value">{{ shots|length }}</div>
             </div>
             <div class="stat surface">
                 <span class="stat-label">Mahsulotlar</span>
@@ -54,26 +52,26 @@
                 <div class="card shot-card">
                     <div class="section-title">
                         <div class="stack">
-                            <span class="pill">Shot #{{ shot.bill_number }}</span>
+                            <span class="pill">Stol #{{ table.number }} · Hisob #{{ shot.bill_number }}</span>
                             <h2>Jami: {{ shot.total_amount }}</h2>
                         </div>
                         <div class="actions">
                             <form method="post" action="{% url 'orders:close_table' table.pk %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="bill_number" value="{{ shot.bill_number }}">
-                                <button class="btn" type="submit">Shotni yopish</button>
+                                <button class="btn" type="submit">Hisobni yopish</button>
                             </form>
                         </div>
                     </div>
 
                     <div class="meta">
                         <div>
-                            <strong>Buyurtmalar soni</strong>
-                            {{ shot.orders|length }} ta
-                        </div>
-                        <div>
                             <strong>Mahsulotlar</strong>
                             {{ shot.items_count }} ta
+                        </div>
+                        <div>
+                            <strong>Ofitsant</strong>
+                            {% if shot.latest_order %}{{ shot.latest_order.waiter.full_name }}{% else %}—{% endif %}
                         </div>
                     </div>
 
@@ -81,7 +79,7 @@
                         {% for order in shot.orders %}
                             <div class="order-mini-card">
                                 <div class="order-header">
-                                    <strong>#{{ order.external_id }}</strong>
+                                    <span class="pill mini">Stol #{{ table.number }} · Hisob #{{ shot.bill_number }}</span>
                                     <span class="support-text">{{ order.created_at|date:"H:i" }}</span>
                                     <span class="pill mini{% if order.status == 'partially_rejected' %} danger{% elif order.status == 'new' %} warn{% endif %}">{{ order.get_status_display }}</span>
                                 </div>
@@ -93,17 +91,13 @@
                                         </div>
                                     {% endfor %}
                                 </div>
-                                <div class="order-footer">
-                                    <span class="support-text">Ofitsant: {{ order.waiter.full_name }}</span>
-                                    <a href="{% url 'orders:order_detail' order.pk %}" class="link">Batafsil</a>
-                                </div>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
             {% empty %}
                 <div class="surface empty" style="grid-column:1/-1;">
-                    <strong>Faol shotlar yo'q</strong>
+                    <strong>Faol hisob yo'q</strong>
                     Bu stol bo'yicha hozircha ochiq hisob mavjud emas.
                 </div>
             {% endfor %}
