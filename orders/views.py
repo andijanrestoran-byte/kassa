@@ -137,7 +137,12 @@ def kitchen_print(request: HttpRequest, pk: int):
         Order.objects.select_related("waiter", "table").prefetch_related("items__product"),
         pk=pk,
     )
-    return render(request, "orders/kitchen_print.html", {"order": order, "auto_print": True})
+    # embed=1 -> oshxona konsoli ichida (o'zi chop etmaydi, konsol boshqaradi)
+    embed = request.GET.get("embed") == "1"
+    return render(request, "orders/kitchen_print.html", {
+        "order": order,
+        "auto_print": not embed,
+    })
 
 
 PAYMENT_LABELS = {
@@ -575,6 +580,62 @@ def tables_qr(request: HttpRequest):
 
 
 # ============================================================
+# OSHXONA — avtomatik chek konsoli (kassir/oshxona kompyuterida ochiq turadi)
+# ============================================================
+
+KITCHEN_STATUSES = (Order.Status.ACCEPTED, Order.Status.PARTIALLY_REJECTED)
+
+
+@require_GET
+@login_required
+def oshxona_console(request: HttpRequest):
+    """Bu sahifa oshxona printeriga ulangan kompyuterda ochiq qoldiriladi.
+    Yangi (avtomatik qabul qilingan) buyurtma kelganda cheki avtomatik
+    chop etiladi."""
+    if not _is_manager(request):
+        return HttpResponseBadRequest("Ruxsat berilmagan")
+    return render(request, "orders/oshxona.html", _base_context())
+
+
+@require_GET
+@login_required
+def oshxona_queue(request: HttpRequest):
+    """Hali chek chiqarilmagan buyurtmalar ro'yxati (JSON)."""
+    today = timezone.localdate()
+    qs = (
+        Order.objects.filter(
+            status__in=KITCHEN_STATUSES,
+            kitchen_printed=False,
+            created_at__date=today,
+        )
+        .order_by("created_at")
+        .values("id", "table__number", "created_at")[:20]
+    )
+    return JsonResponse({
+        "orders": [
+            {
+                "id": o["id"],
+                "table": o["table__number"],
+                "time": timezone.localtime(o["created_at"]).strftime("%H:%M"),
+            }
+            for o in qs
+        ]
+    })
+
+
+@require_POST
+@login_required
+def oshxona_claim(request: HttpRequest, pk: int):
+    """Buyurtmani 'chek chiqarildi' deb atomik belgilab oladi.
+    Faqat bitta konsol (yoki tab) chop etishi kafolatlanadi."""
+    claimed = (
+        Order.objects.filter(pk=pk, kitchen_printed=False)
+        .update(kitchen_printed=True)
+    )
+    return JsonResponse({"claimed": bool(claimed)})
+
+
+# ============================================================
 # MIJOZ — QR orqali o'z-o'ziga xizmat (public, auth kerak emas)
 # ============================================================
 
@@ -647,7 +708,7 @@ def client_order_create(request: HttpRequest, qr_token: str):
                 table=table,
                 bill_number=1,
                 note=note,
-                status=Order.Status.NEW,
+                status=Order.Status.ACCEPTED,
                 order_source=Order.OrderSource.CLIENT,
                 client_name=client_name,
             )
@@ -665,6 +726,7 @@ def client_order_create(request: HttpRequest, qr_token: str):
                     order=order,
                     product=product,
                     quantity=quantity,
+                    status=OrderItem.Status.ACCEPTED,
                     note=(c.get("note") or "").strip(),
                 )
                 stock = ProductDailyStock.objects.filter(

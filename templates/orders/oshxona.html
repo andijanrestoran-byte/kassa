@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Oshxona cheki{% endblock %}
+{% block page_kicker %}Oshxona{% endblock %}
+{% block hero_title %}Oshxona avtomatik chek konsoli{% endblock %}
+{% block hero_text %}Bu sahifani oshxona printeriga ulangan kompyuterda OCHIQ qoldiring. Yangi buyurtma (ofitsant yoki mijoz) kelganda cheki avtomatik chop etiladi. Sahifani yopmang.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Holat</span>
+        <strong id="liveState">Faol</strong>
+    </div>
+    <div class="hero-chip">
+        <span>Chop etilgan (sessiya)</span>
+        <strong id="printedCount">0</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    {% csrf_token %}
+    <div class="page-shell">
+        <div class="surface content-panel">
+            <div class="section-title">
+                <div>
+                    <h2>Chek printeri</h2>
+                    <p class="support-text">Har 8 soniyada yangi buyurtmalar tekshiriladi va avtomatik chop etiladi. Brauzerda oshxona printerini "standart" qilib qo'ying (dialogsiz chop etish uchun kiosk/silent rejim tavsiya etiladi).</p>
+                </div>
+                <div class="page-status" id="pulse">Kuzatilmoqda</div>
+            </div>
+
+            <div class="items" id="log">
+                <div class="empty"><strong>Hozircha chek chiqarilmadi</strong>Yangi buyurtma kelishi bilan shu yerda ko'rinadi.</div>
+            </div>
+        </div>
+    </div>
+
+    <iframe id="pf" title="chek" style="position:fixed;width:0;height:0;border:0;left:-9999px;"></iframe>
+
+    <script>
+        (function () {
+            var QUEUE = "{% url 'orders:oshxona_queue' %}";
+            var csrf = document.querySelector('input[name=csrfmiddlewaretoken]').value;
+            var printed = 0, busy = false, seen = {};
+            var logEl = document.getElementById('log');
+            var pulse = document.getElementById('pulse');
+
+            function claimUrl(id) { return "/oshxona/" + id + "/printed/"; }
+
+            function addLog(o) {
+                if (printed === 1) logEl.innerHTML = '';
+                var row = document.createElement('div');
+                row.className = 'item';
+                row.innerHTML = '<div class="item-top"><div class="stack">' +
+                    '<strong>Stol #' + o.table + ' · Buyurtma #' + o.id + '</strong>' +
+                    '<span class="support-text">' + o.time + ' — chek chiqarildi</span>' +
+                    '</div><span class="pill mini">Chop etildi</span></div>';
+                logEl.insertBefore(row, logEl.firstChild);
+                document.getElementById('printedCount').textContent = printed;
+            }
+
+            function printOrder(id) {
+                return new Promise(function (resolve) {
+                    var f = document.getElementById('pf');
+                    var done = false;
+                    f.onload = function () {
+                        setTimeout(function () {
+                            try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) {}
+                            if (!done) { done = true; setTimeout(resolve, 1200); }
+                        }, 350);
+                    };
+                    f.src = "/orders/" + id + "/kitchen-print/?embed=1";
+                    // xavfsizlik: 6s ichida onload bo'lmasa ham davom etamiz
+                    setTimeout(function () { if (!done) { done = true; resolve(); } }, 6000);
+                });
+            }
+
+            async function tick() {
+                if (busy) return;
+                busy = true;
+                pulse.textContent = 'Tekshirilmoqda…';
+                try {
+                    var r = await fetch(QUEUE, { headers: { 'X-Requested-With': 'fetch' } });
+                    var d = await r.json();
+                    for (var i = 0; i < d.orders.length; i++) {
+                        var o = d.orders[i];
+                        if (seen[o.id]) continue;
+                        var c = await fetch(claimUrl(o.id), {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': csrf },
+                        });
+                        var cj = await c.json();
+                        if (cj.claimed) {
+                            seen[o.id] = true;
+                            await printOrder(o.id);
+                            printed++;
+                            addLog(o);
+                        }
+                    }
+                    document.getElementById('liveState').textContent = 'Faol';
+                } catch (e) {
+                    document.getElementById('liveState').textContent = 'Xato';
+                } finally {
+                    pulse.textContent = 'Kuzatilmoqda';
+                    busy = false;
+                }
+            }
+
+            setInterval(tick, 8000);
+            tick();
+        })();
+    </script>
+{% endblock %}

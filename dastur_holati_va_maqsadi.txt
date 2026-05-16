@@ -35,7 +35,16 @@ Restoran operatsiyalarini avtomatlashtirish:
   (RevenueReport + dashboard summary). Hisob yopilganda tushadi.
 - Web panelga ham kira oladi (kassir bilan bir xil sahifalar).
 
+AVTOMATIK QABUL: Ofitsant VA mijoz (QR) buyurtmalari avtomatik
+"ACCEPTED" bo'ladi — kassir qabul qilishi SHART EMAS. Buyurtma
+kassirga ko'rinadi va parallel ravishda oshxona cheki avtomatik
+chiqadi (Oshxona konsoli orqali).
+
 2.2. KASSIR (Web panel — asosiy ish joyi)
+- OSHXONA: /oshxona/  — bu sahifa oshxona printeriga ulangan
+  kompyuterda OCHIQ qoldiriladi. Har 8s yangi buyurtmalarni tekshiradi,
+  yangi (qabul qilingan) buyurtma chekini avtomatik chop etadi
+  (Order.kitchen_printed bilan takror chop oldi olinadi, atomik claim).
 - SMENA: /smena/  — "Smenani boshlash" tugmasi. Smena ochilmaguncha:
     * buyurtma QABUL QILIB BO'LMAYDI (web accept + API cashier accept bloklangan)
     * kunlik PORTSIYA kiritib bo'lmaydi
@@ -116,6 +125,9 @@ Restoran operatsiyalarini avtomatlashtirish:
 - is_rejectable: web reject_item bloklash + ofitsant/mijoz UI'da ko'rsatish.
 - Mijoz QR self-service web sahifasi (menyu/buyurtma/holat/reject).
 - "Stollar QR" sahifasi (chop etish/yuklab olish), QR -> /m/<token>/.
+- Mijoz buyurtmasi ham avtomatik ACCEPTED (kassir qabul qilmaydi).
+- Oshxona avtomatik chek konsoli /oshxona/ (Order.kitchen_printed,
+  0015 migratsiya, atomik claim, embed=1 kitchen-print).
 
 ====================================================================
 6. ERTAGA DAVOM ETTIRISH UCHUN ESLATMALAR / KEYINGI ISHLAR

@@ -229,6 +229,10 @@ class Order(models.Model):
         blank=True,
         help_text="Public mijoz endpointlari uchun maxfiy token.",
     )
+    kitchen_printed = models.BooleanField(
+        default=False,
+        help_text="Oshxona cheki avtomatik chop etilgan-etilmagani.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

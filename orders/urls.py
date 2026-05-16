@@ -37,6 +37,11 @@ urlpatterns = [
     # ── Stollar QR kodlari (panel) ──
     path("stollar-qr/", views.tables_qr, name="tables_qr"),
 
+    # ── Oshxona avtomatik chek konsoli ──
+    path("oshxona/", views.oshxona_console, name="oshxona_console"),
+    path("oshxona/queue/", views.oshxona_queue, name="oshxona_queue"),
+    path("oshxona/<int:pk>/printed/", views.oshxona_claim, name="oshxona_claim"),
+
     # ── Mijoz QR self-service (public, web) ──
     path("m/order/<int:order_id>/", views.client_order_status, name="client_order_status"),
     path("m/order/<int:order_id>/items/<int:item_id>/reject/", views.client_reject_item, name="client_reject_item"),

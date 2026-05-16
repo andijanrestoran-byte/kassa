@@ -311,6 +311,10 @@
                         <span>Buyurtmalar</span>
                         {% if new_orders_count %}<span class="nav-badge">{{ new_orders_count }}</span>{% endif %}
                     </a>
+                    <a class="nav-item{% if request.resolver_match.url_name == 'oshxona_console' %} active{% endif %}" href="{% url 'orders:oshxona_console' %}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="9" rx="2"/><path d="M7 8V5h10v3M8 17v3M16 17v3M8 12h.01"/></svg>
+                        <span>Oshxona</span>
+                    </a>
                     <a class="nav-item{% if request.resolver_match.url_name == 'tables_overview' or request.resolver_match.url_name == 'table_bill' %} active{% endif %}" href="{% url 'orders:tables_overview' %}">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M3 9h18M9 17v3M15 17v3"/></svg>
                         <span>Stollar</span>

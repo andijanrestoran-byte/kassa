@@ -437,7 +437,7 @@ class PublicClientOrderView(APIView):
             order = Order.objects.create(
                 external_id=external_id, waiter=None, table=table,
                 bill_number=d.get("bill_number", 1),
-                note=d.get("note", ""), status=Order.Status.NEW,
+                note=d.get("note", ""), status=Order.Status.ACCEPTED,
                 order_source=Order.OrderSource.CLIENT, client_name=d["client_name"],
             )
             for item in d["items"]:
@@ -447,6 +447,7 @@ class PublicClientOrderView(APIView):
                     raise ValidationError({"detail": f"{product.name} sig'imi yetarli emas. Qolgan: {remaining}"})
                 OrderItem.objects.create(
                     order=order, product=product, quantity=item["quantity"],
+                    status=OrderItem.Status.ACCEPTED,
                     note=item.get("note", ""),
                 )
                 stock = ProductDailyStock.objects.filter(product=product, date=today).first()
