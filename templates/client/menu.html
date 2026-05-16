@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DASTURXON — Stol #{{ table.number }}</title>
+    <style>
+        :root {
+            --bg:#f7f1e8; --panel:#fff; --line:rgba(74,45,31,.12);
+            --text:#3d2418; --muted:#8a7a6a; --accent:#8a4b2a; --accent-strong:#6f3a1f;
+            --ok:#2b7a4b; --danger:#b91c1c; --warn:#b45309;
+        }
+        *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+        body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);padding-bottom:96px;}
+        a{color:inherit;text-decoration:none;}
+        header{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,var(--accent),var(--accent-strong));color:#fff;padding:18px 18px 14px;}
+        header h1{margin:0;font-size:1.3rem;letter-spacing:.04em;text-transform:uppercase;}
+        header .sub{opacity:.9;font-size:.85rem;margin-top:3px;}
+        .wrap{padding:14px;}
+        .err{background:#fae3e0;color:var(--danger);border:1px solid rgba(185,28,28,.3);padding:12px 14px;border-radius:12px;margin-bottom:12px;font-size:.9rem;}
+        .tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;}
+        .tab{flex:none;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);font-weight:700;font-size:.85rem;}
+        .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+        .cat-title{font-size:1.05rem;font-weight:800;margin:14px 2px 8px;}
+        .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(74,45,31,.06);}
+        .card.dim{opacity:.55;}
+        .card .top{display:flex;justify-content:space-between;gap:10px;}
+        .name{font-weight:700;font-size:1rem;}
+        .desc{color:var(--muted);font-size:.82rem;margin-top:3px;}
+        .price{font-weight:800;color:var(--accent-strong);white-space:nowrap;}
+        .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+        .badge{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px;}
+        .b-ok{background:#e3f3e9;color:var(--ok);}
+        .b-out{background:#fae3e0;color:var(--danger);}
+        .b-norej{background:#f7e7cf;color:var(--warn);}
+        .qty{display:flex;align-items:center;gap:14px;margin-top:12px;}
+        .qty button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:1.3rem;font-weight:700;color:var(--accent);}
+        .qty button:disabled{opacity:.35;}
+        .qty .n{font-size:1.1rem;font-weight:800;min-width:22px;text-align:center;}
+        .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:14px 16px;display:flex;gap:12px;align-items:center;box-shadow:0 -6px 20px rgba(74,45,31,.08);}
+        .bar .sum{flex:1;}
+        .bar .sum b{display:block;font-size:1.15rem;}
+        .bar .sum span{color:var(--muted);font-size:.8rem;}
+        .btn{background:var(--accent);color:#fff;border:none;padding:14px 22px;border-radius:12px;font-size:1rem;font-weight:700;}
+        .btn:disabled{opacity:.4;}
+        .btn.block{width:100%;}
+        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;z-index:20;}
+        .overlay[hidden]{display:none;}
+        .sheet{background:var(--bg);width:100%;border-radius:20px 20px 0 0;padding:20px;max-height:86vh;overflow:auto;}
+        .sheet h2{margin:0 0 12px;}
+        .li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.92rem;}
+        label{display:block;font-weight:600;font-size:.86rem;margin:14px 0 6px;}
+        input,textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;color:var(--text);}
+        .ghost{background:#fff;color:var(--accent);border:1px solid var(--line);margin-top:10px;}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DASTURXON</h1>
+        <div class="sub">Stol #{{ table.number }} · O'z-o'ziga xizmat</div>
+    </header>
+
+    <div class="wrap">
+        {% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+        <div class="tabs" id="tabs">
+            <button type="button" class="tab active" data-cat="all">Hammasi</button>
+            {% for g in groups %}
+                <button type="button" class="tab" data-cat="{{ g.id }}">{{ g.name }}</button>
+            {% endfor %}
+        </div>
+
+        {% for g in groups %}
+            <div class="cat-sec" data-cat="{{ g.id }}">
+                <div class="cat-title">{{ g.name }}</div>
+                {% for it in g.items %}
+                    {% if it.is_available %}
+                        <div class="card" data-id="{{ it.id }}" data-price="{{ it.price }}"
+                             data-remaining="{{ it.remaining|default_if_none:'' }}">
+                            <div class="top">
+                                <div>
+                                    <div class="name">{{ it.name }}</div>
+                                    {% if it.description %}<div class="desc">{{ it.description }}</div>{% endif %}
+                                </div>
+                                <div class="price">{{ it.price }} so'm</div>
+                            </div>
+                            <div class="badges">
+                                {% if it.remaining is not None %}<span class="badge b-ok">Bugun: {{ it.remaining }} ta</span>{% endif %}
+                                {% if not it.is_rejectable %}<span class="badge b-norej">Rad etilmaydi</span>{% endif %}
+                            </div>
+                            <div class="qty">
+                                <button type="button" class="dec">−</button>
+                                <span class="n">0</span>
+                                <button type="button" class="inc">+</button>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="card dim">
+                            <div class="top">
+                                <div><div class="name">{{ it.name }}</div></div>
+                                <div class="price">{{ it.price }} so'm</div>
+                            </div>
+                            <div class="badges"><span class="badge b-out">Bugun tugadi</span></div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        {% empty %}
+            <p style="color:var(--muted);text-align:center;padding:40px 0;">Menyu hozircha bo'sh.</p>
+        {% endfor %}
+    </div>
+
+    <div class="bar">
+        <div class="sum">
+            <b id="barSum">0 so'm</b>
+            <span id="barCnt">Savat bo'sh</span>
+        </div>
+        <button class="btn" id="openCart" type="button" disabled>Buyurtma berish</button>
+    </div>
+
+    <div class="overlay" id="cartOverlay" hidden>
+        <div class="sheet">
+            <h2>Buyurtmangiz</h2>
+            <div id="cartLines"></div>
+            <form method="post" action="{% url 'orders:client_order_create' qr_token %}" id="orderForm">
+                {% csrf_token %}
+                <input type="hidden" name="items" id="itemsField">
+                <label for="cn">Ismingiz *</label>
+                <input type="text" id="cn" name="client_name" required placeholder="Masalan: Aziz">
+                <label for="nt">Izoh (ixtiyoriy)</label>
+                <textarea id="nt" name="note" rows="2" placeholder="Masalan: tuz kam"></textarea>
+                <button class="btn block" type="submit" style="margin-top:16px;">Tasdiqlash va yuborish</button>
+            </form>
+            <button class="btn block ghost" type="button" id="closeCart">Yopish</button>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            var cart={}, names={};
+            var tabs=document.getElementById('tabs'), secs=document.querySelectorAll('.cat-sec');
+            tabs.addEventListener('click',function(e){
+                var b=e.target.closest('.tab'); if(!b)return;
+                tabs.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});
+                b.classList.add('active');
+                var c=b.dataset.cat;
+                secs.forEach(function(s){s.style.display=(c==='all'||s.dataset.cat===c)?'':'none';});
+            });
+            function fmt(n){return n.toLocaleString('ru-RU');}
+            function refresh(){
+                var sum=0,cnt=0;
+                Object.keys(cart).forEach(function(id){
+                    var q=cart[id]; if(q>0){cnt+=q;sum+=q*names[id].price;}
+                });
+                document.getElementById('barSum').textContent=fmt(sum)+" so'm";
+                document.getElementById('barCnt').textContent=cnt?cnt+' ta mahsulot':'Savat bo‘sh';
+                document.getElementById('openCart').disabled=cnt===0;
+            }
+            document.querySelectorAll('.card[data-id]').forEach(function(card){
+                var id=card.dataset.id, price=parseInt(card.dataset.price,10)||0;
+                var rem=card.dataset.remaining===''?null:parseInt(card.dataset.remaining,10);
+                names[id]={name:card.querySelector('.name').textContent,price:price};
+                cart[id]=0;
+                var nEl=card.querySelector('.n'), inc=card.querySelector('.inc'), dec=card.querySelector('.dec');
+                function upd(){
+                    nEl.textContent=cart[id];
+                    dec.disabled=cart[id]<=0;
+                    inc.disabled=(rem!==null && cart[id]>=rem);
+                    refresh();
+                }
+                inc.addEventListener('click',function(){ if(rem!==null&&cart[id]>=rem)return; cart[id]++; upd();});
+                dec.addEventListener('click',function(){ if(cart[id]>0)cart[id]--; upd();});
+                upd();
+            });
+            var ov=document.getElementById('cartOverlay');
+            document.getElementById('openCart').addEventListener('click',function(){
+                var lines=document.getElementById('cartLines'), html='', arr=[];
+                Object.keys(cart).forEach(function(id){
+                    var q=cart[id]; if(q>0){
+                        html+='<div class="li"><span>'+names[id].name+' × '+q+'</span><span>'+fmt(q*names[id].price)+"</span></div>";
+                        arr.push({menu_item_id:parseInt(id,10),quantity:q});
+                    }
+                });
+                lines.innerHTML=html;
+                document.getElementById('itemsField').value=JSON.stringify(arr);
+                ov.hidden=false;
+            });
+            document.getElementById('closeCart').addEventListener('click',function(){ov.hidden=true;});
+            ov.addEventListener('click',function(e){if(e.target===ov)ov.hidden=true;});
+        })();
+    </script>
+</body>
+</html>

@@ -8,6 +8,7 @@ from django.db import transaction
 from django.http import HttpRequest, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import (
@@ -542,3 +543,167 @@ def start_shift(request: HttpRequest):
         defaults={"opened_by": request.user},
     )
     return redirect("orders:daily_stock")
+
+
+# ============================================================
+# MIJOZ — QR orqali o'z-o'ziga xizmat (public, auth kerak emas)
+# ============================================================
+
+def _client_menu_groups(request):
+    """QR menyu uchun kategoriya/mahsulotlar (sig'im bilan)."""
+    today = timezone.localdate()
+    products = Product.objects.filter(is_active=True).select_related("category")
+    stocks = {s.product_id: s for s in ProductDailyStock.objects.filter(date=today)}
+    groups = {}
+    for p in products:
+        stock = stocks.get(p.id)
+        remaining = stock.remaining_quantity if stock else None
+        key = p.category_id or 0
+        bucket = groups.setdefault(key, {
+            "id": key,
+            "name": p.category.name if p.category else "Boshqa",
+            "items": [],
+        })
+        bucket["items"].append({
+            "id": p.id,
+            "name": p.name,
+            "description": p.description,
+            "price": p.price,
+            "is_rejectable": p.is_rejectable,
+            "remaining": remaining,
+            "is_available": not (remaining is not None and remaining <= 0),
+            "image_url": request.build_absolute_uri(p.image.url) if p.image else None,
+        })
+    return list(groups.values())
+
+
+@require_GET
+def client_menu(request: HttpRequest, qr_token: str):
+    table = get_object_or_404(DiningTable, qr_token=qr_token)
+    return render(request, "client/menu.html", {
+        "table": table,
+        "qr_token": qr_token,
+        "groups": _client_menu_groups(request),
+        "error": request.GET.get("error"),
+    })
+
+
+@require_POST
+def client_order_create(request: HttpRequest, qr_token: str):
+    table = get_object_or_404(DiningTable, qr_token=qr_token)
+    client_name = (request.POST.get("client_name") or "").strip()
+    note = (request.POST.get("note") or "").strip()
+
+    try:
+        cart = json.loads(request.POST.get("items") or "[]")
+    except (json.JSONDecodeError, TypeError):
+        cart = []
+
+    cart = [
+        c for c in cart
+        if isinstance(c, dict) and int(c.get("quantity", 0)) > 0
+    ]
+
+    if not client_name:
+        return redirect(f"/m/{qr_token}/?error=Ismingizni kiriting")
+    if not cart:
+        return redirect(f"/m/{qr_token}/?error=Savat bo'sh")
+
+    today = timezone.localdate()
+    try:
+        with transaction.atomic():
+            order = Order.objects.create(
+                external_id=f"CLIENT-{table.number}-{get_random_string(16)}",
+                waiter=None,
+                table=table,
+                bill_number=1,
+                note=note,
+                status=Order.Status.NEW,
+                order_source=Order.OrderSource.CLIENT,
+                client_name=client_name,
+            )
+            for c in cart:
+                quantity = int(c["quantity"])
+                product = get_object_or_404(
+                    Product, pk=int(c["menu_item_id"]), is_active=True
+                )
+                remaining = product.get_today_remaining()
+                if remaining is not None and remaining < quantity:
+                    raise ValueError(
+                        f"{product.name}: yetarli emas (qolgan {remaining})"
+                    )
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                    note=(c.get("note") or "").strip(),
+                )
+                stock = ProductDailyStock.objects.filter(
+                    product=product, date=today
+                ).first()
+                if stock:
+                    stock.remaining_quantity = max(
+                        0, stock.remaining_quantity - quantity
+                    )
+                    stock.save(update_fields=["remaining_quantity", "updated_at"])
+    except ValueError as exc:
+        return redirect(f"/m/{qr_token}/?error={exc}")
+
+    return redirect(f"/m/order/{order.id}/?t={order.public_token}")
+
+
+@require_GET
+def client_order_status(request: HttpRequest, order_id: int):
+    token = request.GET.get("t")
+    order = get_object_or_404(
+        Order.objects.select_related("table").prefetch_related("items__product"),
+        pk=order_id,
+        order_source=Order.OrderSource.CLIENT,
+        public_token=token,
+    )
+    return render(request, "client/status.html", {
+        "order": order,
+        "token": token,
+        "can_edit": order.status in (Order.Status.NEW, Order.Status.ACCEPTED),
+    })
+
+
+@require_POST
+def client_reject_item(request: HttpRequest, order_id: int, item_id: int):
+    token = request.POST.get("t") or request.GET.get("t")
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items__product"),
+        pk=order_id,
+        order_source=Order.OrderSource.CLIENT,
+        public_token=token,
+    )
+    redirect_url = f"/m/order/{order_id}/?t={token}"
+
+    if order.status not in (Order.Status.NEW, Order.Status.ACCEPTED):
+        return redirect(redirect_url)
+
+    item = get_object_or_404(
+        OrderItem.objects.select_related("product"), pk=item_id, order=order
+    )
+    if not item.product.is_rejectable or item.status == OrderItem.Status.REJECTED:
+        return redirect(redirect_url)
+
+    with transaction.atomic():
+        item.status = OrderItem.Status.REJECTED
+        item.rejection_reason = "Mijoz tomonidan rad etildi"
+        item.save(update_fields=["status", "rejection_reason"])
+
+        stock = ProductDailyStock.objects.filter(
+            product=item.product, date=timezone.localdate()
+        ).first()
+        if stock:
+            stock.remaining_quantity += item.quantity
+            stock.save(update_fields=["remaining_quantity", "updated_at"])
+
+        if order.items.exclude(status=OrderItem.Status.REJECTED).count() == 0:
+            order.status = Order.Status.CANCELLED
+        else:
+            order.status = Order.Status.PARTIALLY_REJECTED
+        order.save(update_fields=["status", "updated_at"])
+
+    return redirect(redirect_url)

@@ -232,7 +232,7 @@ class TableQRCodeView(APIView):
     def get(self, request, table_id):
         table = get_object_or_404(DiningTable, pk=table_id)
         base_url = request.query_params.get("base_url", request.build_absolute_uri("/"))
-        qr_url = f"{base_url.rstrip('/')}/api/v1/public/menu/{table.qr_token}"
+        qr_url = f"{base_url.rstrip('/')}/m/{table.qr_token}/"
         img = qrcode.make(qr_url, box_size=10, border=2)
         buf = io.BytesIO()
         img.save(buf, format="PNG")
