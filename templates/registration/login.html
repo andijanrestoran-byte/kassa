@@ -12,7 +12,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="page-shell">
+    <div class="page-shell" style="text-align:left;">
         <div class="section-title">
             <div>
                 <h2>Tizimga kirish</h2>
@@ -21,8 +21,8 @@
         </div>
 
         {% if form.errors %}
-            <div class="note-box" style="margin-top:0;background:rgba(255,106,61,0.10);border-color:rgba(255,106,61,0.18);">
-                <strong style="display:block;margin-bottom:6px;color:#ff8c67;">Kirish amalga oshmadi</strong>
+            <div class="note-box" style="margin-top:0;background:var(--danger-soft);border-color:rgba(255,93,87,0.28);text-align:left;">
+                <strong style="display:block;margin-bottom:6px;color:var(--danger);">Kirish amalga oshmadi</strong>
                 Login yoki parol noto'g'ri.
             </div>
         {% endif %}
@@ -38,7 +38,7 @@
                     <label for="id_password">Parol</label>
                     <input id="id_password" type="password" name="password" required>
                 </div>
-                <button class="btn" type="submit">Kirish</button>
+                <button class="btn" type="submit" style="width:100%;margin-top:4px;">Kirish</button>
             </div>
         </form>
     </div>

@@ -57,7 +57,7 @@
 
                             {% if item.rejection_reason %}
                                 <div class="note-box">
-                                    <strong style="display:block;margin-bottom:6px;color:#92400e;">Rad etish sababi</strong>
+                                    <strong style="display:block;margin-bottom:6px;color:var(--danger);">Rad etish sababi</strong>
                                     {{ item.rejection_reason }}
                                 </div>
                             {% endif %}
@@ -105,7 +105,7 @@
 
                 {% if order.note %}
                     <div class="note-box">
-                        <strong style="display:block;margin-bottom:6px;color:#92400e;">Ofitsant izohi</strong>
+                        <strong style="display:block;margin-bottom:6px;color:var(--warn);">Ofitsant izohi</strong>
                         {{ order.note }}
                     </div>
                 {% endif %}
