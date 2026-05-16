@@ -1,3 +1,4 @@
+import secrets
 from decimal import Decimal
 
 from django.db import migrations
@@ -77,6 +78,7 @@ def seed_tables_and_menu(apps, schema_editor):
                 "zone": table_payload["zone"],
                 "seats": table_payload["seats"],
                 "location": table_payload["location"],
+                "qr_token": secrets.token_hex(16),
             },
         )
 

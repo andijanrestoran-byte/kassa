@@ -31,16 +31,9 @@ from .api_serializers import (
     waiter_user_payload,
 )
 from .models import DiningTable, MenuCategory, Order, OrderItem, Payment, Product, ProductDailyStock, UserProfile, Waiter
+from .services import ACTIVE_ORDER_STATUSES, order_payable_total
 
 User = get_user_model()
-
-
-ACTIVE_ORDER_STATUSES = (
-    Order.Status.NEW,
-    Order.Status.ACCEPTED,
-    Order.Status.PARTIALLY_REJECTED,
-)
-
 
 def ensure_waiter_instance(user):
     waiter = getattr(user, "waiter_profile", None)
@@ -372,6 +365,15 @@ class PaymentsView(APIView):
         )
         if hasattr(order, "payment"):
             return Response({"detail": "Bu order uchun to'lov allaqachon qilingan."}, status=status.HTTP_400_BAD_REQUEST)
+        expected_amount = order_payable_total(order)
+        if serializer.validated_data["amount"] != expected_amount:
+            return Response(
+                {
+                    "detail": "To'lov summasi buyurtma hisobiga mos emas.",
+                    "expected_amount": expected_amount,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         payment = Payment.objects.create(
             order=order,
