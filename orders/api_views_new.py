@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -31,11 +32,9 @@ from .models import (
     DiningTable, MenuCategory, Order, OrderItem, Payment,
     Product, ProductDailyStock, UserProfile, Waiter,
 )
+from .services import ACTIVE_ORDER_STATUSES, order_payable_total, table_summary
 
 User = get_user_model()
-
-ACTIVE_ORDER_STATUSES = (Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.PARTIALLY_REJECTED)
-
 
 def ensure_profile(user):
     profile = getattr(user, "profile", None)
@@ -46,6 +45,17 @@ def ensure_profile(user):
             role=default_role, phone="", shift="", experience="",
         )
     return profile
+
+
+def get_public_order_for_request(order_id, token):
+    if not token:
+        raise ValidationError({"detail": "public_token talab qilinadi."})
+    return get_object_or_404(
+        Order.objects.select_related("table").prefetch_related("items__product"),
+        pk=order_id,
+        order_source=Order.OrderSource.CLIENT,
+        public_token=token,
+    )
 
 
 # ============================================================
@@ -266,14 +276,21 @@ class DailyStockView(APIView):
         today = timezone.localdate()
         results = []
         for item in serializer.validated_data["stocks"]:
-            stock, created = ProductDailyStock.objects.update_or_create(
-                product_id=item["product_id"], date=today,
-                defaults={
-                    "initial_quantity": item["initial_quantity"],
-                    "remaining_quantity": item["initial_quantity"],
-                    "set_by": request.user,
-                },
-            )
+            stock = ProductDailyStock.objects.filter(product_id=item["product_id"], date=today).first()
+            if stock:
+                consumed_quantity = max(stock.initial_quantity - stock.remaining_quantity, 0)
+                stock.initial_quantity = item["initial_quantity"]
+                stock.remaining_quantity = max(item["initial_quantity"] - consumed_quantity, 0)
+                stock.set_by = request.user
+                stock.save(update_fields=["initial_quantity", "remaining_quantity", "set_by", "updated_at"])
+            else:
+                stock = ProductDailyStock.objects.create(
+                    product_id=item["product_id"],
+                    date=today,
+                    initial_quantity=item["initial_quantity"],
+                    remaining_quantity=item["initial_quantity"],
+                    set_by=request.user,
+                )
             results.append(ProductDailyStockResponseSerializer(stock).data)
         return Response(results, status=status.HTTP_200_OK)
 
@@ -309,6 +326,53 @@ class CashierPendingOrdersView(APIView):
             status__in=[Order.Status.NEW, Order.Status.ACCEPTED]
         ).select_related("table", "waiter__user", "waiter__user__profile").prefetch_related("items__product").order_by("created_at")
         return Response([serialize_order(o) for o in orders])
+
+
+class TablesOverviewView(APIView):
+    permission_classes = [IsDirectorOrCashier]
+
+    def get(self, request):
+        tables = []
+        for table in DiningTable.objects.all().order_by("number"):
+            summary = table_summary(table)
+            tables.append(
+                {
+                    "table": {
+                        "id": table.id,
+                        "number": table.number,
+                        "zone": table.zone,
+                        "location": table.location,
+                        "seats": table.seats,
+                        "status": table.current_status,
+                        "qr_token": table.qr_token,
+                    },
+                    "shots": [
+                        {
+                            "bill_number": shot["bill_number"],
+                            "orders_count": len(shot["orders"]),
+                            "items_count": shot["items_count"],
+                            "total_amount": shot["total_amount"],
+                            "latest_order_id": shot["latest_order"].id if shot["latest_order"] else None,
+                        }
+                        for shot in summary["shots"]
+                    ],
+                    "orders_count": summary["orders_count"],
+                    "items_count": summary["items_count"],
+                    "total_amount": summary["total_amount"],
+                    "latest_order": (
+                        {
+                            "id": summary["latest_order"].id,
+                            "external_id": summary["latest_order"].external_id,
+                            "status": summary["latest_order"].status,
+                            "bill_number": summary["latest_order"].bill_number,
+                            "created_at": summary["latest_order"].created_at,
+                        }
+                        if summary["latest_order"]
+                        else None
+                    ),
+                }
+            )
+        return Response(tables)
 
 
 # ============================================================
@@ -370,7 +434,7 @@ class PublicClientOrderView(APIView):
                 product = get_object_or_404(Product, pk=item["menu_item_id"], is_active=True)
                 remaining = product.get_today_remaining()
                 if remaining is not None and remaining < item["quantity"]:
-                    raise Http404(f"{product.name} sig'imi yetarli emas. Qolgan: {remaining}")
+                    raise ValidationError({"detail": f"{product.name} sig'imi yetarli emas. Qolgan: {remaining}"})
                 OrderItem.objects.create(
                     order=order, product=product, quantity=item["quantity"],
                     note=item.get("note", ""),
@@ -384,6 +448,7 @@ class PublicClientOrderView(APIView):
             "id": order.id, "external_id": order.external_id,
             "table_number": table.number, "client_name": order.client_name,
             "status": "active", "total_amount": order.total_amount,
+            "public_token": order.public_token,
         }, status=status.HTTP_201_CREATED)
 
 
@@ -391,10 +456,7 @@ class PublicOrderStatusView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, order_id):
-        order = get_object_or_404(
-            Order.objects.select_related("table").prefetch_related("items__product"),
-            pk=order_id, order_source=Order.OrderSource.CLIENT,
-        )
+        order = get_public_order_for_request(order_id, request.query_params.get("token"))
         return Response(serialize_order(order))
 
 
@@ -403,7 +465,7 @@ class PublicOrderStatusView(APIView):
 # ============================================================
 
 class WaiterAllTablesView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsWaiter]
 
     def get(self, request):
         tables = DiningTable.objects.prefetch_related("assigned_waiters__profile").all()
@@ -564,11 +626,7 @@ class CashierCloseTableView(APIView):
 
         with transaction.atomic():
             for order in active_orders:
-                order_total = sum(
-                    (item.line_total for item in order.items.all()
-                    if item.status != OrderItem.Status.REJECTED),
-                    Decimal("0")
-                )
+                order_total = order_payable_total(order)
                 total += order_total
                 if not hasattr(order, "payment"):
                     payment = Payment.objects.create(
@@ -602,9 +660,8 @@ class PublicClientRejectItemView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, order_id, item_id):
-        order = get_object_or_404(
-            Order, pk=order_id, order_source=Order.OrderSource.CLIENT
-        )
+        token = request.data.get("token") or request.query_params.get("token")
+        order = get_public_order_for_request(order_id, token)
         if order.status not in (Order.Status.NEW, Order.Status.ACCEPTED):
             return Response({"detail": "Bu buyurtmani o'zgartirish mumkin emas."}, status=400)
 
@@ -640,4 +697,3 @@ class PublicClientRejectItemView(APIView):
                 order.save(update_fields=["status", "updated_at"])
 
         return Response({"detail": "Taom rad etildi.", "order_status": order.status})
-

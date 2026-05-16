@@ -316,6 +316,7 @@ def serialize_order(order: Order, include_items: bool = True):
         "created_at": order.created_at,
         "order_source": order.order_source,
         "client_name": order.client_name,
+        "public_token": order.public_token if order.order_source == Order.OrderSource.CLIENT else None,
     }
     if include_items:
         payload["items"] = [
@@ -376,12 +377,15 @@ def build_dashboard_summary():
         },
         "orders": {
             "active": orders.filter(status__in=[Order.Status.NEW, Order.Status.ACCEPTED]).count(),
+            "new": orders.filter(status=Order.Status.NEW).count(),
+            "accepted": orders.filter(status=Order.Status.ACCEPTED).count(),
             "rejected": orders.filter(status=Order.Status.PARTIALLY_REJECTED).count(),
             "paid_today": today_orders.filter(status=Order.Status.COMPLETED).count(),
         },
         "payments": {
             "cash_today": cash_today,
             "card_today": card_today,
+            "mixed_today": mixed_today,
             "total_today": total_today,
         },
         "staff": {

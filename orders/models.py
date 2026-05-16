@@ -222,6 +222,13 @@ class Order(models.Model):
         blank=True,
         help_text="Mijoz o'z-o'ziga xizmat berganida ismi.",
     )
+    public_token = models.CharField(
+        max_length=32,
+        unique=True,
+        null=True,
+        blank=True,
+        help_text="Public mijoz endpointlari uchun maxfiy token.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -234,9 +241,21 @@ class Order(models.Model):
         source = self.client_name if self.order_source == self.OrderSource.CLIENT else str(self.waiter or "—")
         return f"{self.external_id} / {source} / {self.table}"
 
+    def save(self, *args, **kwargs):
+        if not self.public_token:
+            self.public_token = secrets.token_hex(16)
+        super().save(*args, **kwargs)
+
     @property
     def total_amount(self):
         return sum((item.line_total for item in self.items.all()), Decimal("0"))
+
+    @property
+    def payable_amount(self):
+        return sum(
+            (item.line_total for item in self.items.all() if item.status != OrderItem.Status.REJECTED),
+            Decimal("0"),
+        )
 
 
 class OrderItem(models.Model):

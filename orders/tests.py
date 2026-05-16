@@ -471,6 +471,34 @@ class OrderFlowTests(TestCase):
         self.assertEqual(payments_response.status_code, 200)
         self.assertEqual(payments_response.json()[0]["payment_method"], "cash")
 
+    def test_payment_amount_must_match_order_total(self):
+        table = DiningTable.objects.create(number=118)
+        product = Product.objects.create(name="Steyk", price=40000)
+        order = Order.objects.create(external_id="MOB-3010", waiter=self.waiter, table=table)
+        OrderItem.objects.create(order=order, product=product, quantity=1)
+
+        cashier_login = self.client.post(
+            reverse("orders:v1_login"),
+            data=json.dumps({"username": "kassir_test", "password": "TestPass123!"}),
+            content_type="application/json",
+        )
+        cashier_auth = {"HTTP_AUTHORIZATION": f"Bearer {cashier_login.json()['access']}"}
+
+        payment_response = self.client.post(
+            reverse("orders:v1_payments"),
+            data=json.dumps(
+                {
+                    "order_id": order.id,
+                    "payment_method": "cash",
+                    "amount": "39000.00",
+                }
+            ),
+            content_type="application/json",
+            **cashier_auth,
+        )
+        self.assertEqual(payment_response.status_code, 400)
+        self.assertEqual(payment_response.json()["expected_amount"], 40000.0)
+
     def test_mobile_platform_api_paths_are_supported(self):
         director_login = self.client.post(
             reverse("orders:api_login"),
@@ -683,6 +711,30 @@ class NewEndpointTests(TestCase):
         self.assertEqual(item["initial_quantity"], 50)
         self.assertEqual(item["remaining_quantity"], 50)
 
+    def test_cashier_daily_stock_update_preserves_consumed_quantity(self):
+        auth = self._login("kassir2", "Kas123!")
+        self.client.post(
+            reverse("orders:v1_daily_stock"),
+            data=json.dumps({"stocks": [{"product_id": self.product.id, "initial_quantity": 10}]}),
+            content_type="application/json",
+            **auth,
+        )
+        stock = ProductDailyStock.objects.get(product=self.product)
+        stock.remaining_quantity = 4
+        stock.save(update_fields=["remaining_quantity"])
+
+        response = self.client.post(
+            reverse("orders:v1_daily_stock"),
+            data=json.dumps({"stocks": [{"product_id": self.product.id, "initial_quantity": 12}]}),
+            content_type="application/json",
+            **auth,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        stock.refresh_from_db()
+        self.assertEqual(stock.initial_quantity, 12)
+        self.assertEqual(stock.remaining_quantity, 6)
+
     def test_cashier_accept_order(self):
         auth = self._login("kassir2", "Kas123!")
         order = Order.objects.create(external_id="CASH-TEST-1", waiter=self.waiter, table=self.table, status=Order.Status.NEW)
@@ -720,9 +772,62 @@ class NewEndpointTests(TestCase):
         self.assertEqual(r.status_code, 201)
         self.assertEqual(r.json()["client_name"], "Alisher")
         self.assertEqual(r.json()["table_number"], 50)
+        self.assertIn("public_token", r.json())
         order = Order.objects.get(pk=r.json()["id"])
         self.assertEqual(order.order_source, Order.OrderSource.CLIENT)
         self.assertIsNone(order.waiter)
+
+    def test_public_order_status_requires_token(self):
+        self.table.refresh_from_db()
+        create_response = self.client.post(
+            reverse("orders:v1_public_order", args=[self.table.qr_token]),
+            data=json.dumps({
+                "client_name": "Alisher",
+                "items": [{"menu_item_id": self.product.id, "quantity": 1}],
+            }),
+            content_type="application/json",
+        )
+        order_id = create_response.json()["id"]
+        token = create_response.json()["public_token"]
+
+        no_token_response = self.client.get(reverse("orders:v1_public_order_status", args=[order_id]))
+        self.assertEqual(no_token_response.status_code, 400)
+
+        response = self.client.get(f"{reverse('orders:v1_public_order_status', args=[order_id])}?token={token}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["id"], order_id)
+
+    def test_public_reject_item_requires_matching_token(self):
+        self.table.refresh_from_db()
+        create_response = self.client.post(
+            reverse("orders:v1_public_order", args=[self.table.qr_token]),
+            data=json.dumps({
+                "client_name": "Alisher",
+                "items": [{"menu_item_id": self.product.id, "quantity": 1}],
+            }),
+            content_type="application/json",
+        )
+        order = Order.objects.get(pk=create_response.json()["id"])
+        item = order.items.get()
+
+        response = self.client.post(
+            reverse("orders:v1_public_reject_item", args=[order.id, item.id]),
+            data=json.dumps({"reason": "Bekor", "token": "wrong-token"}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_cashier_tables_overview_api(self):
+        auth = self._login("kassir2", "Kas123!")
+        order = Order.objects.create(external_id="OVERVIEW-1", waiter=self.waiter, table=self.table, status=Order.Status.ACCEPTED)
+        OrderItem.objects.create(order=order, product=self.product, quantity=2, status=OrderItem.Status.ACCEPTED)
+
+        response = self.client.get(reverse("orders:v1_cashier_tables_overview"), **auth)
+
+        self.assertEqual(response.status_code, 200)
+        table_payload = next(item for item in response.json() if item["table"]["number"] == 50)
+        self.assertEqual(table_payload["orders_count"], 1)
+        self.assertEqual(table_payload["shots"][0]["bill_number"], 1)
 
     def test_stock_capacity_blocks_order(self):
         """Sig'im 0 bo'lsa buyurtma berib bo'lmasligi."""
@@ -740,7 +845,7 @@ class NewEndpointTests(TestCase):
             }),
             content_type="application/json",
         )
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.status_code, 400)
 
     def test_is_rejectable_in_menu(self):
         """Menyu'da is_rejectable ko'rinishi."""
