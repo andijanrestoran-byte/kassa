@@ -1,5 +1,4 @@
 import json
-from decimal import Decimal
 from functools import wraps
 
 from django.contrib.auth import authenticate
@@ -10,56 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import DiningTable, MenuCategory, Order, OrderItem, Product, UserProfile, Waiter
-
-ACTIVE_ORDER_STATUSES = (
-    Order.Status.NEW,
-    Order.Status.ACCEPTED,
-    Order.Status.PARTIALLY_REJECTED,
-)
-
-
-def _order_total(order: Order) -> Decimal:
-    return sum((item.line_total for item in order.items.all()), Decimal("0"))
-
-
-def _table_summary(table: DiningTable):
-    active_orders = list(
-        Order.objects.filter(table=table, status__in=ACTIVE_ORDER_STATUSES)
-        .select_related("waiter", "table")
-        .prefetch_related("items__product")
-        .order_by("bill_number", "-created_at")
-    )
-    
-    # Guruhlash
-    shots = {}
-    for order in active_orders:
-        bn = order.bill_number
-        if bn not in shots:
-            shots[bn] = {
-                "bill_number": bn,
-                "orders": [],
-                "total_amount": Decimal("0"),
-                "items_count": 0,
-                "latest_order": order,
-            }
-        shots[bn]["orders"].append(order)
-        shots[bn]["total_amount"] += _order_total(order)
-        shots[bn]["items_count"] += order.items.count()
-
-    # Ro'yxat ko'rinishida (bill_number bo'yicha tartiblangan)
-    shots_list = sorted(shots.values(), key=lambda x: x["bill_number"])
-
-    total_amount_table = sum((s["total_amount"] for s in shots_list), Decimal("0"))
-    total_items_table = sum((s["items_count"] for s in shots_list))
-    
-    return {
-        "table": table,
-        "shots": shots_list,
-        "active_orders": active_orders, # Backwards compatibility for templates that expect this
-        "orders_count": len(active_orders),
-        "items_count": total_items_table,
-        "total_amount": total_amount_table,
-    }
+from .services import ACTIVE_ORDER_STATUSES, table_summary
 
 
 def _base_context():
@@ -120,7 +70,7 @@ def rejected_orders(request: HttpRequest):
 @require_GET
 @login_required
 def tables_overview(request: HttpRequest):
-    tables = [_table_summary(table) for table in DiningTable.objects.all().order_by("number")]
+    tables = [table_summary(table) for table in DiningTable.objects.all().order_by("number")]
     context = {
         **_base_context(),
         "tables": tables,
@@ -142,7 +92,7 @@ def order_detail(request: HttpRequest, pk: int):
 @login_required
 def table_bill(request: HttpRequest, table_id: int):
     table = get_object_or_404(DiningTable, pk=table_id)
-    summary = _table_summary(table)
+    summary = table_summary(table)
     return render(request, "orders/table_bill.html", {**summary, **_base_context()})
 
 
@@ -150,7 +100,7 @@ def table_bill(request: HttpRequest, table_id: int):
 @login_required
 def table_print(request: HttpRequest, table_id: int):
     table = get_object_or_404(DiningTable, pk=table_id)
-    summary = _table_summary(table)
+    summary = table_summary(table)
     summary["auto_print"] = True
     return render(request, "orders/table_print.html", summary)
 
@@ -228,6 +178,7 @@ def waiters_list(request: HttpRequest):
     waiters = UserProfile.objects.filter(role=UserProfile.Role.WAITER).select_related('user')
     return render(request, "orders/waiters_list.html", {
         "waiters": waiters,
+        "waiters_count": waiters.count(),
         **_base_context()
     })
 
@@ -270,5 +221,29 @@ def create_waiter(request: HttpRequest):
             user=user,
             full_name=full_name
         )
+
+    return redirect("orders:waiters_list")
+
+
+@require_POST
+@login_required
+def delete_waiter(request: HttpRequest, user_id: int):
+    """Ofitsantni o'chirish (Web orqali). Faqat Direktor yoki Kassir."""
+    profile = getattr(request.user, "profile", None)
+    if not (request.user.is_superuser or (profile and profile.role in ['director', 'cashier'])):
+        return HttpResponseBadRequest("Ruxsat berilmagan")
+
+    from django.contrib.auth.models import User
+
+    waiter_user = get_object_or_404(
+        User, pk=user_id, profile__role=UserProfile.Role.WAITER
+    )
+
+    with transaction.atomic():
+        # Legacy Waiter yozuvini ham olib tashlaymiz (user SET_NULL bo'lgani uchun
+        # User o'chsa null bo'lib qoladi — shuning uchun avval o'chiramiz).
+        Waiter.objects.filter(user=waiter_user).delete()
+        # User o'chirilsa UserProfile (CASCADE) ham o'chadi.
+        waiter_user.delete()
 
     return redirect("orders:waiters_list")
