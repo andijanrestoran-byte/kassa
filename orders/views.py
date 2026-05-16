@@ -1,6 +1,10 @@
+import base64
+import io
 import json
 from decimal import Decimal, InvalidOperation
 from functools import wraps
+
+import qrcode
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
@@ -543,6 +547,31 @@ def start_shift(request: HttpRequest):
         defaults={"opened_by": request.user},
     )
     return redirect("orders:daily_stock")
+
+
+@require_GET
+@login_required
+def tables_qr(request: HttpRequest):
+    """Har bir stol uchun QR kod (chop etish / yuklab olish)."""
+    if not _is_manager(request):
+        return HttpResponseBadRequest("Ruxsat berilmagan")
+    base = request.build_absolute_uri("/").rstrip("/")
+    cards = []
+    for table in DiningTable.objects.order_by("number"):
+        url = f"{base}/m/{table.qr_token}/"
+        img = qrcode.make(url, box_size=9, border=2)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        cards.append({
+            "table": table,
+            "url": url,
+            "data": base64.b64encode(buf.getvalue()).decode(),
+        })
+    return render(request, "orders/tables_qr.html", {
+        "cards": cards,
+        "tables_count": len(cards),
+        **_base_context(),
+    })
 
 
 # ============================================================

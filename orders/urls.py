@@ -34,6 +34,9 @@ urlpatterns = [
     path("smena/start/", views.start_shift, name="start_shift"),
     path("smena/save/", views.daily_stock_save, name="daily_stock_save"),
 
+    # ── Stollar QR kodlari (panel) ──
+    path("stollar-qr/", views.tables_qr, name="tables_qr"),
+
     # ── Mijoz QR self-service (public, web) ──
     path("m/order/<int:order_id>/", views.client_order_status, name="client_order_status"),
     path("m/order/<int:order_id>/items/<int:item_id>/reject/", views.client_reject_item, name="client_reject_item"),

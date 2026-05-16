@@ -315,6 +315,10 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M3 9h18M9 17v3M15 17v3"/></svg>
                         <span>Stollar</span>
                     </a>
+                    <a class="nav-item{% if request.resolver_match.url_name == 'tables_qr' %} active{% endif %}" href="{% url 'orders:tables_qr' %}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 21v.01M17 21h.01M21 17h.01"/></svg>
+                        <span>Stollar QR</span>
+                    </a>
                 </div>
                 <div class="nav-group">
                     <div class="nav-label">Nazorat</div>

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Stollar QR{% endblock %}
+{% block page_kicker %}Stollar QR{% endblock %}
+{% block hero_title %}Stollar uchun QR kodlar{% endblock %}
+{% block hero_text %}Har bir stol QR kodini chop etib, stolga yopishtiring. Mijoz skanlaganda menyu va o'z-o'ziga xizmat sahifasi ochiladi.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Stollar</span>
+        <strong>{{ tables_count }}</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="section-title">
+            <div>
+                <h2>QR kodlar</h2>
+                <p class="support-text">Chop etish yoki alohida yuklab olish mumkin.</p>
+            </div>
+            <div class="actions no-print">
+                <button class="btn" type="button" onclick="window.print()">Hammasini chop etish</button>
+            </div>
+        </div>
+
+        <div class="qr-grid">
+            {% for c in cards %}
+                <div class="qr-card">
+                    <div class="qr-num">Stol #{{ c.table.number }}</div>
+                    {% if c.table.zone %}<div class="qr-zone">{{ c.table.zone }}</div>{% endif %}
+                    <img class="qr-img" src="data:image/png;base64,{{ c.data }}" alt="Stol #{{ c.table.number }} QR">
+                    <div class="qr-brand">DASTURXON · QR orqali buyurtma</div>
+                    <a class="btn secondary no-print" download="stol-{{ c.table.number }}-qr.png"
+                       href="data:image/png;base64,{{ c.data }}">Yuklab olish</a>
+                </div>
+            {% empty %}
+                <div class="surface empty" style="grid-column:1/-1;">
+                    <strong>Stollar topilmadi</strong>
+                    Avval admin panelda stollarni kiriting.
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <style>
+        .qr-grid {
+            display: grid; gap: 18px;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        }
+        .qr-card {
+            background: var(--panel); border: 1px solid var(--line);
+            border-radius: 16px; padding: 20px; text-align: center;
+            display: grid; gap: 10px; justify-items: center;
+        }
+        .qr-num { font-size: 1.3rem; font-weight: 800; }
+        .qr-zone { color: var(--muted); font-size: 0.85rem; margin-top: -6px; }
+        .qr-img {
+            width: 190px; height: 190px; background: #fff;
+            border-radius: 12px; padding: 8px;
+        }
+        .qr-brand {
+            color: var(--muted); font-size: 0.74rem;
+            letter-spacing: 0.12em; text-transform: uppercase;
+        }
+        .qr-card .btn { width: 100%; }
+
+        @media print {
+            @page { margin: 12mm; }
+            body { background: #fff !important; }
+            .sidebar, .topbar, .hero, .section-title, .no-print { display: none !important; }
+            .app-shell { display: block !important; }
+            .main-shell { padding: 0 !important; }
+            .content-panel, .surface {
+                background: #fff !important; border: none !important;
+                box-shadow: none !important; padding: 0 !important;
+            }
+            .qr-grid { grid-template-columns: repeat(2, 1fr); gap: 10mm; }
+            .qr-card {
+                border: 1px dashed #999 !important; color: #000 !important;
+                break-inside: avoid; page-break-inside: avoid;
+            }
+            .qr-num, .qr-brand, .qr-zone { color: #000 !important; }
+        }
+    </style>
+{% endblock %}
