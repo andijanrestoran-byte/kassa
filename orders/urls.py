@@ -20,6 +20,7 @@ urlpatterns = [
     path("orders/<int:pk>/kitchen-print/", views.kitchen_print, name="kitchen_print"),
     path("waiters/", views.waiters_list, name="waiters_list"),
     path("waiters/create/", views.create_waiter, name="create_waiter"),
+    path("waiters/<int:user_id>/delete/", views.delete_waiter, name="delete_waiter"),
     path("tables/<int:table_id>/close/", views.close_table, name="close_table"),
 
     # ── API v1 — Auth ──
@@ -66,6 +67,7 @@ urlpatterns = [
     path("api/v1/cashier/daily-stock", api_views_new.DailyStockView.as_view(), name="v1_daily_stock"),
     path("api/v1/cashier/orders/pending", api_views_new.CashierPendingOrdersView.as_view(), name="v1_cashier_pending"),
     path("api/v1/cashier/orders/<int:order_id>/accept", api_views_new.CashierAcceptOrderView.as_view(), name="v1_cashier_accept"),
+    path("api/v1/cashier/tables/overview", api_views_new.TablesOverviewView.as_view(), name="v1_cashier_tables_overview"),
     path("api/v1/cashier/tables/<int:table_id>/bill", api_views_new.CashierTableBillView.as_view(), name="v1_cashier_table_bill"),
     path("api/v1/cashier/tables/<int:table_id>/close", api_views_new.CashierCloseTableView.as_view(), name="v1_cashier_close_table"),
 

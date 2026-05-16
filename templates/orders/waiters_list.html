@@ -25,6 +25,16 @@
                                 <div class="text-right">
                                     <strong>Status</strong>
                                     <span class="pill">Faol</span>
+                                    <form method="post"
+                                          action="{% url 'orders:delete_waiter' waiter.user.id %}"
+                                          style="margin-top: 10px;"
+                                          onsubmit="return confirm('{{ waiter.full_name|escapejs }} ({{ waiter.user.username|escapejs }}) o\'chirilsinmi?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn secondary"
+                                                style="color: var(--danger, #d33); border-color: var(--danger, #d33);">
+                                            O'chirish
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
