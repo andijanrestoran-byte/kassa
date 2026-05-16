@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Smena boshlash{% endblock %}
+{% block page_kicker %}Smena{% endblock %}
+{% block hero_title %}Smenani boshlash — bugungi portsiyalar{% endblock %}
+{% block hero_text %}Har bir taom uchun bugun nechta portsiya borligini kiriting. Bo'sh qoldirilgan maydon — cheksiz (sig'im belgilanmagan). Bu ma'lumot ofitsant ilovasida ko'rinadi.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Sana</span>
+        <strong>{{ today|date:"d.m.Y" }}</strong>
+    </div>
+    <div class="hero-chip">
+        <span>Belgilangan</span>
+        <strong>{{ set_count }} / {{ products_count }}</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="surface content-panel">
+            <div class="section-title">
+                <div>
+                    <h2>Bugungi sig'im jadvali</h2>
+                    <p class="support-text">Kiritib, pastdagi "Smenani boshlash" tugmasini bosing. Iste'mol qilingan portsiya saqlanadi.</p>
+                </div>
+            </div>
+
+            <form method="post" action="{% url 'orders:daily_stock_save' %}">
+                {% csrf_token %}
+                <div class="stock-table">
+                    <div class="stock-row stock-head">
+                        <span>Mahsulot</span>
+                        <span>Kategoriya</span>
+                        <span class="text-right">Narx</span>
+                        <span class="text-right">Bugungi portsiya</span>
+                        <span class="text-right">Qolgan</span>
+                    </div>
+                    {% for row in rows %}
+                        <div class="stock-row">
+                            <strong>{{ row.product.name }}</strong>
+                            <span class="support-text">{{ row.product.category.name|default:"—" }}</span>
+                            <span class="text-right support-text">{{ row.product.price }}</span>
+                            <span class="text-right">
+                                <input type="number" name="qty_{{ row.product.id }}" min="0"
+                                       value="{{ row.initial }}" placeholder="∞"
+                                       style="width:110px;display:inline-block;text-align:center;">
+                            </span>
+                            <span class="text-right">
+                                {% if row.is_set %}
+                                    {% if row.remaining == 0 %}
+                                        <span class="pill mini danger">Tugadi</span>
+                                    {% else %}
+                                        <span class="pill mini">{{ row.remaining }}</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="support-text">cheksiz</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    {% empty %}
+                        <div class="empty">
+                            <strong>Faol mahsulot yo'q</strong>
+                            Avval menyuga mahsulot qo'shing.
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if rows %}
+                    <div class="actions" style="margin-top:22px;">
+                        <button class="btn" type="submit">Smenani boshlash / saqlash</button>
+                        <a class="btn ghost" href="{% url 'orders:menu_list' %}">Menyuga o'tish</a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .stock-table {
+            border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+        }
+        .stock-row {
+            display: grid;
+            grid-template-columns: 2fr 1.4fr 1fr 1.2fr 0.9fr;
+            gap: 14px; align-items: center;
+            padding: 13px 18px; border-bottom: 1px solid var(--line);
+            background: var(--panel-soft);
+        }
+        .stock-row:last-child { border-bottom: none; }
+        .stock-head {
+            background: var(--panel-muted); color: var(--muted);
+            font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+            font-weight: 700;
+        }
+        .stock-row strong { color: var(--text); }
+        @media (max-width: 780px) {
+            .stock-row { grid-template-columns: 1fr 1fr; }
+            .stock-head { display: none; }
+            .stock-row span.text-right, .stock-row input { text-align: left; }
+        }
+    </style>
+{% endblock %}

@@ -21,6 +21,17 @@ urlpatterns = [
     path("waiters/", views.waiters_list, name="waiters_list"),
     path("waiters/create/", views.create_waiter, name="create_waiter"),
     path("waiters/<int:user_id>/delete/", views.delete_waiter, name="delete_waiter"),
+
+    # ── Menyu boshqaruvi (web) ──
+    path("menu/", views.menu_list, name="menu_list"),
+    path("menu/create/", views.menu_create, name="menu_create"),
+    path("menu/<int:pk>/update/", views.menu_update, name="menu_update"),
+    path("menu/<int:pk>/delete/", views.menu_delete, name="menu_delete"),
+    path("menu/categories/create/", views.category_create, name="category_create"),
+
+    # ── Smena boshlash — kunlik portsiya (web) ──
+    path("smena/", views.daily_stock, name="daily_stock"),
+    path("smena/save/", views.daily_stock_save, name="daily_stock_save"),
     path("tables/<int:table_id>/close/", views.close_table, name="close_table"),
 
     # ── API v1 — Auth ──

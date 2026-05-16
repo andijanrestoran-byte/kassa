@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Menyu boshqaruvi{% endblock %}
+{% block page_kicker %}Menyu{% endblock %}
+{% block hero_title %}Menyu boshqaruvi{% endblock %}
+{% block hero_text %}Mahsulotlarni qo'shish, tahrirlash va o'chirish. Faol mahsulotlar ofitsant ilovasida ko'rinadi.{% endblock %}
+{% block hero_side %}
+    <div class="hero-chip">
+        <span>Mahsulotlar</span>
+        <strong>{{ products_count }}</strong>
+    </div>
+    <div class="hero-chip">
+        <span>Kategoriyalar</span>
+        <strong>{{ categories|length }}</strong>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="page-shell">
+        <div class="split-layout">
+            <div class="surface content-panel">
+                <div class="section-title">
+                    <div>
+                        <h2>Mahsulotlar ro'yxati</h2>
+                        <p class="support-text">Tahrirlash uchun mahsulot ustiga bosing.</p>
+                    </div>
+                </div>
+
+                <div class="items">
+                    {% for product in products %}
+                        <details class="item">
+                            <summary class="item-top" style="cursor:pointer;list-style:none;">
+                                <div class="stack" style="gap:5px;">
+                                    <div class="row" style="gap:8px;flex-wrap:wrap;">
+                                        <strong style="font-size:1.05rem;">{{ product.name }}</strong>
+                                        {% if product.is_active %}
+                                            <span class="pill mini">Faol</span>
+                                        {% else %}
+                                            <span class="pill mini danger">Nofaol</span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="support-text">{{ product.category.name|default:"Kategoriyasiz" }}</span>
+                                </div>
+                                <div class="stack text-right" style="gap:3px;">
+                                    <span class="support-text">Narx</span>
+                                    <strong style="font-size:1.05rem;color:var(--accent-strong);">{{ product.price }}</strong>
+                                </div>
+                            </summary>
+
+                            <form method="post" action="{% url 'orders:menu_update' product.pk %}" class="form-grid" style="max-width:none;margin-top:16px;">
+                                {% csrf_token %}
+                                <div>
+                                    <label>Nom</label>
+                                    <input type="text" name="name" value="{{ product.name }}" required>
+                                </div>
+                                <div>
+                                    <label>Kategoriya</label>
+                                    <select name="category">
+                                        <option value="">— Kategoriyasiz —</option>
+                                        {% for cat in categories %}
+                                            <option value="{{ cat.id }}"{% if product.category_id == cat.id %} selected{% endif %}>{{ cat.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Narx</label>
+                                    <input type="text" name="price" value="{{ product.price }}" required>
+                                </div>
+                                <div>
+                                    <label>Tavsif</label>
+                                    <input type="text" name="description" value="{{ product.description }}">
+                                </div>
+                                <label class="row" style="gap:8px;font-weight:600;font-size:0.9rem;">
+                                    <input type="checkbox" name="is_active" style="width:auto;"{% if product.is_active %} checked{% endif %}>
+                                    Faol (ofitsant menyusida ko'rinadi)
+                                </label>
+                                <label class="row" style="gap:8px;font-weight:600;font-size:0.9rem;">
+                                    <input type="checkbox" name="is_rejectable" style="width:auto;"{% if product.is_rejectable %} checked{% endif %}>
+                                    Rad etish mumkin
+                                </label>
+                                <div class="actions">
+                                    <button class="btn" type="submit">Saqlash</button>
+                                </div>
+                            </form>
+                            <form method="post" action="{% url 'orders:menu_delete' product.pk %}"
+                                  style="margin-top:10px;"
+                                  onsubmit="return confirm('{{ product.name|escapejs }} o\'chirilsinmi?');">
+                                {% csrf_token %}
+                                <button class="btn danger" type="submit">O'chirish</button>
+                            </form>
+                        </details>
+                    {% empty %}
+                        <div class="empty">
+                            <strong>Mahsulotlar yo'q</strong>
+                            O'ngdagi forma orqali birinchi mahsulotni qo'shing.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="stack" style="gap:22px;">
+                <div class="surface content-panel">
+                    <div class="section-title">
+                        <h2>Yangi mahsulot</h2>
+                    </div>
+                    <form method="post" action="{% url 'orders:menu_create' %}" class="form-grid">
+                        {% csrf_token %}
+                        <div>
+                            <label>Nom</label>
+                            <input type="text" name="name" placeholder="Masalan: Osh" required>
+                        </div>
+                        <div>
+                            <label>Kategoriya</label>
+                            <select name="category">
+                                <option value="">— Kategoriyasiz —</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Narx</label>
+                            <input type="text" name="price" placeholder="25000" required>
+                        </div>
+                        <div>
+                            <label>Tavsif</label>
+                            <input type="text" name="description" placeholder="Ixtiyoriy">
+                        </div>
+                        <label class="row" style="gap:8px;font-weight:600;font-size:0.9rem;">
+                            <input type="checkbox" name="is_active" style="width:auto;" checked>
+                            Faol
+                        </label>
+                        <label class="row" style="gap:8px;font-weight:600;font-size:0.9rem;">
+                            <input type="checkbox" name="is_rejectable" style="width:auto;" checked>
+                            Rad etish mumkin
+                        </label>
+                        <button class="btn" type="submit" style="width:100%;">Qo'shish</button>
+                    </form>
+                </div>
+
+                <div class="surface content-panel">
+                    <div class="section-title">
+                        <h2>Yangi kategoriya</h2>
+                    </div>
+                    <form method="post" action="{% url 'orders:category_create' %}" class="form-grid">
+                        {% csrf_token %}
+                        <div>
+                            <label>Kategoriya nomi</label>
+                            <input type="text" name="name" placeholder="Masalan: Issiq taomlar" required>
+                        </div>
+                        <div>
+                            <label>Tartib raqami</label>
+                            <input type="number" name="sort_order" value="0" min="0">
+                        </div>
+                        <button class="btn secondary" type="submit" style="width:100%;">Kategoriya qo'shish</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
