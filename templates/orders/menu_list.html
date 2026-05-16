@@ -48,6 +48,9 @@
                                         {% else %}
                                             <span class="pill mini danger">Nofaol</span>
                                         {% endif %}
+                                        {% if not product.is_rejectable %}
+                                            <span class="pill mini warn">Rad etilmaydi</span>
+                                        {% endif %}
                                     </div>
                                     <span class="support-text">{{ product.category.name|default:"Kategoriyasiz" }}</span>
                                 </div>

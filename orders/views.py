@@ -102,6 +102,7 @@ def order_detail(request: HttpRequest, pk: int):
     return render(request, "orders/order_detail.html", {
         "order": order,
         "shift_open": Shift.is_open(),
+        "norej": request.GET.get("norej") == "1",
         **_base_context(),
     })
 
@@ -217,7 +218,10 @@ def accept_order(request: HttpRequest, pk: int):
 @login_required
 def reject_item(request: HttpRequest, pk: int, item_id: int):
     order = get_object_or_404(Order, pk=pk)
-    item = get_object_or_404(OrderItem, pk=item_id, order=order)
+    item = get_object_or_404(OrderItem.objects.select_related("product"), pk=item_id, order=order)
+    if not item.product.is_rejectable:
+        # Bu taom rad etib bo'lmaydigan deb belgilangan.
+        return redirect(f"/orders/{pk}/?norej=1")
     reason = request.POST.get("reason", "").strip() or "Kassada rad etildi"
     item.status = OrderItem.Status.REJECTED
     item.rejection_reason = reason

@@ -17,6 +17,12 @@
 
 {% block content %}
     <div class="page-shell">
+        {% if norej %}
+            <div class="note-box" style="background:var(--danger-soft);border-color:rgba(255,93,87,0.28);">
+                <strong style="display:block;margin-bottom:4px;color:var(--danger);">Rad etib bo'lmadi</strong>
+                <span class="support-text">Bu taom "rad etilmaydigan" deb belgilangan — buyurtmadan keyin rad etib bo'lmaydi.</span>
+            </div>
+        {% endif %}
         <div class="split-layout">
             <div class="card">
                 <div class="section-title">
@@ -63,13 +69,17 @@
                             {% endif %}
 
                             {% if item.status != "rejected" %}
-                                <div class="item-actions">
-                                    <form class="inline" method="post" action="{% url 'orders:reject_item' order.pk item.pk %}">
-                                        {% csrf_token %}
-                                        <input type="text" name="reason" placeholder="Masalan: mahsulot tugagan">
-                                        <button class="btn danger" type="submit">Mahsulotni rad etish</button>
-                                    </form>
-                                </div>
+                                {% if item.product.is_rejectable %}
+                                    <div class="item-actions">
+                                        <form class="inline" method="post" action="{% url 'orders:reject_item' order.pk item.pk %}">
+                                            {% csrf_token %}
+                                            <input type="text" name="reason" placeholder="Masalan: mahsulot tugagan">
+                                            <button class="btn danger" type="submit">Mahsulotni rad etish</button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <span class="pill danger">Rad etilmaydi — bu taom buyurtmadan keyin rad etib bo'lmaydi</span>
+                                {% endif %}
                             {% endif %}
                         </div>
                     {% endfor %}
