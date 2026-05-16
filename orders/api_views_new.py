@@ -30,7 +30,7 @@ from .api_serializers import (
 )
 from .models import (
     DiningTable, MenuCategory, Order, OrderItem, Payment,
-    Product, ProductDailyStock, UserProfile, Waiter,
+    Product, ProductDailyStock, Shift, UserProfile, Waiter,
 )
 from .services import ACTIVE_ORDER_STATUSES, order_payable_total, table_summary
 
@@ -271,6 +271,11 @@ class DailyStockView(APIView):
         return Response(data)
 
     def post(self, request):
+        if not Shift.is_open():
+            return Response(
+                {"detail": "Smena ochilmagan. Avval kassir smenani boshlashi kerak."},
+                status=400,
+            )
         serializer = BulkDailyStockSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         today = timezone.localdate()
@@ -307,6 +312,11 @@ class CashierAcceptOrderView(APIView):
             Order.objects.select_related("table", "waiter__user").prefetch_related("items__product"),
             pk=order_id,
         )
+        if not Shift.is_open():
+            return Response(
+                {"detail": "Smena ochilmagan. Avval kassir smenani boshlashi kerak."},
+                status=400,
+            )
         if order.status != Order.Status.NEW:
             return Response({"detail": "Faqat yangi buyurtmalarni qabul qilish mumkin."}, status=400)
         order.items.filter(status=OrderItem.Status.PENDING).update(status=OrderItem.Status.ACCEPTED)

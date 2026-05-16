@@ -113,10 +113,14 @@
                 <div class="actions">
                     <a class="btn ghost" href="{% url 'orders:orders_list' %}">Ro'yxatga qaytish</a>
                     {% if order.status == 'new' %}
-                        <form method="post" action="{% url 'orders:accept_order' order.pk %}">
-                            {% csrf_token %}
-                            <button class="btn" type="submit">Barchasini qabul qilish</button>
-                        </form>
+                        {% if shift_open %}
+                            <form method="post" action="{% url 'orders:accept_order' order.pk %}">
+                                {% csrf_token %}
+                                <button class="btn" type="submit">Barchasini qabul qilish</button>
+                            </form>
+                        {% else %}
+                            <a class="btn" href="{% url 'orders:daily_stock' %}">Avval smenani boshlang</a>
+                        {% endif %}
                     {% else %}
                         <a class="btn secondary" href="{% url 'orders:kitchen_print' order.pk %}" target="_blank">Oshxona cheki</a>
                     {% endif %}

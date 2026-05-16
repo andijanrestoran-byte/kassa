@@ -3,85 +3,126 @@
 {% block title %}Smena boshlash{% endblock %}
 {% block page_kicker %}Smena{% endblock %}
 {% block hero_title %}Smenani boshlash — bugungi portsiyalar{% endblock %}
-{% block hero_text %}Har bir taom uchun bugun nechta portsiya borligini kiriting. Bo'sh qoldirilgan maydon — cheksiz (sig'im belgilanmagan). Bu ma'lumot ofitsant ilovasida ko'rinadi.{% endblock %}
+{% block hero_text %}Avval smenani boshlang. Smena ochilgach, har bir taom uchun bugungi portsiya sonini kategoriyalar bo'yicha kiritasiz. Bu ma'lumot ofitsant ilovasida ko'rinadi.{% endblock %}
 {% block hero_side %}
     <div class="hero-chip">
         <span>Sana</span>
         <strong>{{ today|date:"d.m.Y" }}</strong>
     </div>
     <div class="hero-chip">
-        <span>Belgilangan</span>
-        <strong>{{ set_count }} / {{ products_count }}</strong>
+        <span>Smena</span>
+        <strong>{% if shift_open %}Ochiq{% else %}Yopiq{% endif %}</strong>
     </div>
 {% endblock %}
 
 {% block content %}
     <div class="page-shell">
-        <div class="surface content-panel">
-            <div class="section-title">
-                <div>
-                    <h2>Bugungi sig'im jadvali</h2>
-                    <p class="support-text">Kiritib, pastdagi "Smenani boshlash" tugmasini bosing. Iste'mol qilingan portsiya saqlanadi.</p>
-                </div>
-            </div>
-
-            <form method="post" action="{% url 'orders:daily_stock_save' %}">
-                {% csrf_token %}
-                <div class="stock-table">
-                    <div class="stock-row stock-head">
-                        <span>Mahsulot</span>
-                        <span>Kategoriya</span>
-                        <span class="text-right">Narx</span>
-                        <span class="text-right">Bugungi portsiya</span>
-                        <span class="text-right">Qolgan</span>
-                    </div>
-                    {% for row in rows %}
-                        <div class="stock-row">
-                            <strong>{{ row.product.name }}</strong>
-                            <span class="support-text">{{ row.product.category.name|default:"—" }}</span>
-                            <span class="text-right support-text">{{ row.product.price }}</span>
-                            <span class="text-right">
-                                <input type="number" name="qty_{{ row.product.id }}" min="0"
-                                       value="{{ row.initial }}" placeholder="∞"
-                                       style="width:110px;display:inline-block;text-align:center;">
-                            </span>
-                            <span class="text-right">
-                                {% if row.is_set %}
-                                    {% if row.remaining == 0 %}
-                                        <span class="pill mini danger">Tugadi</span>
-                                    {% else %}
-                                        <span class="pill mini">{{ row.remaining }}</span>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="support-text">cheksiz</span>
-                                {% endif %}
-                            </span>
-                        </div>
-                    {% empty %}
-                        <div class="empty">
-                            <strong>Faol mahsulot yo'q</strong>
-                            Avval menyuga mahsulot qo'shing.
-                        </div>
-                    {% endfor %}
-                </div>
-
-                {% if rows %}
-                    <div class="actions" style="margin-top:22px;">
-                        <button class="btn" type="submit">Smenani boshlash / saqlash</button>
-                        <a class="btn ghost" href="{% url 'orders:menu_list' %}">Menyuga o'tish</a>
+        {% if not shift_open %}
+            <div class="surface content-panel" style="text-align:center;display:grid;gap:16px;justify-items:center;">
+                {% if need_shift %}
+                    <div class="note-box" style="background:var(--warn-soft);border-color:rgba(245,165,36,0.28);width:100%;text-align:left;">
+                        <strong style="display:block;margin-bottom:6px;color:var(--warn);">Smena ochilmagan</strong>
+                        Buyurtma qabul qilish va portsiya kiritish uchun avval bugungi smenani boshlang.
                     </div>
                 {% endif %}
-            </form>
-        </div>
+                <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <div>
+                    <h2 style="margin:0 0 6px;">Bugungi smena hali boshlanmagan</h2>
+                    <p class="support-text" style="margin:0;">Tugmani bossangiz, smena ochiladi va buyurtmalarni qabul qilib, portsiyalarni kiritishingiz mumkin bo'ladi.</p>
+                </div>
+                <form method="post" action="{% url 'orders:start_shift' %}">
+                    {% csrf_token %}
+                    <button class="btn" type="submit" style="padding:14px 32px;font-size:1rem;">Smenani boshlash</button>
+                </form>
+            </div>
+        {% else %}
+            <div class="surface content-panel">
+                <div class="section-title">
+                    <div>
+                        <h2>Bugungi sig'im jadvali</h2>
+                        <p class="support-text">
+                            Smena ochilgan{% if shift.opened_at %} — {{ shift.opened_at|date:"H:i" }}{% endif %}.
+                            Belgilangan: {{ set_count }} / {{ products_count }}.
+                            Bo'sh maydon = cheksiz.
+                        </p>
+                    </div>
+                </div>
+
+                {% if groups %}
+                    <div class="cat-tabs" id="catTabs">
+                        <button type="button" class="cat-tab active" data-cat="all">Hammasi</button>
+                        {% for g in groups %}
+                            <button type="button" class="cat-tab" data-cat="{{ g.id }}">{{ g.name }}</button>
+                        {% endfor %}
+                    </div>
+
+                    <form method="post" action="{% url 'orders:daily_stock_save' %}">
+                        {% csrf_token %}
+                        {% for g in groups %}
+                            <div class="cat-section" data-cat="{{ g.id }}">
+                                <h3 style="margin:18px 0 10px;">{{ g.name }}</h3>
+                                <div class="stock-table">
+                                    <div class="stock-row stock-head">
+                                        <span>Mahsulot</span>
+                                        <span class="text-right">Narx</span>
+                                        <span class="text-right">Bugungi portsiya</span>
+                                        <span class="text-right">Qolgan</span>
+                                    </div>
+                                    {% for row in g.rows %}
+                                        <div class="stock-row">
+                                            <strong>{{ row.product.name }}</strong>
+                                            <span class="text-right support-text">{{ row.product.price }}</span>
+                                            <span class="text-right">
+                                                <input type="number" name="qty_{{ row.product.id }}" min="0"
+                                                       value="{{ row.initial }}" placeholder="∞"
+                                                       style="width:110px;display:inline-block;text-align:center;">
+                                            </span>
+                                            <span class="text-right">
+                                                {% if row.is_set %}
+                                                    {% if row.remaining == 0 %}
+                                                        <span class="pill mini danger">Tugadi</span>
+                                                    {% else %}
+                                                        <span class="pill mini">{{ row.remaining }}</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="support-text">cheksiz</span>
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <div class="actions" style="margin-top:22px;">
+                            <button class="btn" type="submit">Portsiyalarni saqlash</button>
+                            <a class="btn ghost" href="{% url 'orders:menu_list' %}">Menyuga o'tish</a>
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="empty">
+                        <strong>Faol mahsulot yo'q</strong>
+                        Avval menyuga mahsulot qo'shing.
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 
     <style>
-        .stock-table {
-            border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+        .cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 8px; }
+        .cat-tab {
+            padding: 8px 16px; border-radius: 999px; cursor: pointer;
+            border: 1px solid var(--line-strong); background: var(--panel-muted);
+            color: var(--muted); font-family: inherit; font-weight: 700; font-size: 0.84rem;
         }
+        .cat-tab:hover { color: var(--text); }
+        .cat-tab.active {
+            background: var(--accent); color: var(--accent-text); border-color: var(--accent);
+        }
+        .stock-table { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
         .stock-row {
-            display: grid;
-            grid-template-columns: 2fr 1.4fr 1fr 1.2fr 0.9fr;
+            display: grid; grid-template-columns: 2fr 1fr 1.2fr 0.9fr;
             gap: 14px; align-items: center;
             padding: 13px 18px; border-bottom: 1px solid var(--line);
             background: var(--panel-soft);
@@ -89,8 +130,7 @@
         .stock-row:last-child { border-bottom: none; }
         .stock-head {
             background: var(--panel-muted); color: var(--muted);
-            font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
-            font-weight: 700;
+            font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
         }
         .stock-row strong { color: var(--text); }
         @media (max-width: 780px) {
@@ -99,4 +139,22 @@
             .stock-row span.text-right, .stock-row input { text-align: left; }
         }
     </style>
+
+    <script>
+        (function () {
+            var tabs = document.getElementById('catTabs');
+            if (!tabs) return;
+            var sections = document.querySelectorAll('.cat-section');
+            tabs.addEventListener('click', function (e) {
+                var btn = e.target.closest('.cat-tab');
+                if (!btn) return;
+                tabs.querySelectorAll('.cat-tab').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var cat = btn.getAttribute('data-cat');
+                sections.forEach(function (s) {
+                    s.style.display = (cat === 'all' || s.getAttribute('data-cat') === cat) ? '' : 'none';
+                });
+            });
+        })();
+    </script>
 {% endblock %}

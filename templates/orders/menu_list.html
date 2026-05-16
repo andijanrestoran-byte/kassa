@@ -26,8 +26,18 @@
                     </div>
                 </div>
 
-                <div class="items">
-                    {% for product in products %}
+                {% regroup products by category as cat_groups %}
+                <div class="cat-tabs" id="catTabs">
+                    <button type="button" class="cat-tab active" data-cat="all">Hammasi</button>
+                    {% for grp in cat_groups %}
+                        <button type="button" class="cat-tab" data-cat="{% if grp.grouper %}{{ grp.grouper.id }}{% else %}none{% endif %}">{{ grp.grouper.name|default:"Kategoriyasiz" }}</button>
+                    {% endfor %}
+                </div>
+                {% for grp in cat_groups %}
+                    <div class="cat-section" data-cat="{% if grp.grouper %}{{ grp.grouper.id }}{% else %}none{% endif %}">
+                        <h3 style="margin:16px 0 10px;">{{ grp.grouper.name|default:"Kategoriyasiz" }}</h3>
+                        <div class="items">
+                            {% for product in grp.list %}
                         <details class="item">
                             <summary class="item-top" style="cursor:pointer;list-style:none;">
                                 <div class="stack" style="gap:5px;">
@@ -89,13 +99,15 @@
                                 <button class="btn danger" type="submit">O'chirish</button>
                             </form>
                         </details>
-                    {% empty %}
-                        <div class="empty">
-                            <strong>Mahsulotlar yo'q</strong>
-                            O'ngdagi forma orqali birinchi mahsulotni qo'shing.
+                            {% endfor %}
                         </div>
-                    {% endfor %}
-                </div>
+                    </div>
+                {% empty %}
+                    <div class="empty">
+                        <strong>Mahsulotlar yo'q</strong>
+                        O'ngdagi forma orqali birinchi mahsulotni qo'shing.
+                    </div>
+                {% endfor %}
             </div>
 
             <div class="stack" style="gap:22px;">
@@ -158,4 +170,35 @@
             </div>
         </div>
     </div>
+
+    <style>
+        .cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 4px; }
+        .cat-tab {
+            padding: 8px 16px; border-radius: 999px; cursor: pointer;
+            border: 1px solid var(--line-strong); background: var(--panel-muted);
+            color: var(--muted); font-family: inherit; font-weight: 700; font-size: 0.84rem;
+        }
+        .cat-tab:hover { color: var(--text); }
+        .cat-tab.active {
+            background: var(--accent); color: var(--accent-text); border-color: var(--accent);
+        }
+    </style>
+
+    <script>
+        (function () {
+            var tabs = document.getElementById('catTabs');
+            if (!tabs) return;
+            var sections = document.querySelectorAll('.cat-section');
+            tabs.addEventListener('click', function (e) {
+                var btn = e.target.closest('.cat-tab');
+                if (!btn) return;
+                tabs.querySelectorAll('.cat-tab').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                var cat = btn.getAttribute('data-cat');
+                sections.forEach(function (s) {
+                    s.style.display = (cat === 'all' || s.getAttribute('data-cat') === cat) ? '' : 'none';
+                });
+            });
+        })();
+    </script>
 {% endblock %}

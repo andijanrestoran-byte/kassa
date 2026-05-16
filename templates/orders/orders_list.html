@@ -17,6 +17,15 @@
 
 {% block content %}
     <div class="page-shell">
+        {% if not shift_open %}
+            <div class="note-box" style="background:var(--warn-soft);border-color:rgba(245,165,36,0.28);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+                <div>
+                    <strong style="display:block;margin-bottom:4px;color:var(--warn);">Smena ochilmagan</strong>
+                    <span class="support-text">Buyurtmalarni qabul qilish uchun avval bugungi smenani boshlang.</span>
+                </div>
+                <a class="btn" href="{% url 'orders:daily_stock' %}">Smenani boshlash</a>
+            </div>
+        {% endif %}
         <div class="section-title">
             <div>
                 <h2>Operatsion buyurtmalar</h2>
@@ -60,10 +69,14 @@
                         <a class="btn ghost" href="{% url 'orders:table_bill' order.table.pk %}">Stol hisobi</a>
                         <a class="btn secondary" href="{% url 'orders:order_detail' order.pk %}">Ko'rish</a>
                         {% if order.status == 'new' %}
-                            <form method="post" action="{% url 'orders:accept_order' order.pk %}">
-                                {% csrf_token %}
-                                <button class="btn" type="submit">Qabul qilish</button>
-                            </form>
+                            {% if shift_open %}
+                                <form method="post" action="{% url 'orders:accept_order' order.pk %}">
+                                    {% csrf_token %}
+                                    <button class="btn" type="submit">Qabul qilish</button>
+                                </form>
+                            {% else %}
+                                <a class="btn secondary" href="{% url 'orders:daily_stock' %}">Smena kerak</a>
+                            {% endif %}
                         {% else %}
                              <a class="btn secondary" href="{% url 'orders:kitchen_print' order.pk %}" target="_blank">Oshxona cheki</a>
                         {% endif %}

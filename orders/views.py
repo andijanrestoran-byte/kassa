@@ -17,6 +17,7 @@ from .models import (
     OrderItem,
     Product,
     ProductDailyStock,
+    Shift,
     UserProfile,
     Waiter,
 )
@@ -59,6 +60,7 @@ def orders_list(request: HttpRequest):
     context = {
         **_base_context(),
         "orders": orders,
+        "shift_open": Shift.is_open(),
     }
     return render(request, "orders/orders_list.html", context)
 
@@ -96,7 +98,11 @@ def order_detail(request: HttpRequest, pk: int):
         Order.objects.select_related("waiter", "table").prefetch_related("items__product"),
         pk=pk,
     )
-    return render(request, "orders/order_detail.html", {"order": order, **_base_context()})
+    return render(request, "orders/order_detail.html", {
+        "order": order,
+        "shift_open": Shift.is_open(),
+        **_base_context(),
+    })
 
 
 @require_GET
@@ -155,6 +161,8 @@ def close_table(request: HttpRequest, table_id: int):
 @require_POST
 @login_required
 def accept_order(request: HttpRequest, pk: int):
+    if not Shift.is_open():
+        return redirect("/smena/?need_shift=1")
     order = get_object_or_404(Order.objects.select_related("table", "waiter__user").prefetch_related("items"), pk=pk)
     order.items.filter(status=OrderItem.Status.PENDING).update(status=OrderItem.Status.ACCEPTED)
     if order.items.filter(status=OrderItem.Status.REJECTED).exists():
@@ -390,20 +398,30 @@ def daily_stock(request: HttpRequest):
         s.product_id: s
         for s in ProductDailyStock.objects.filter(date=today)
     }
-    rows = []
+    groups = {}
     for product in products:
         stock = stock_map.get(product.id)
-        rows.append({
+        key = product.category_id or 0
+        bucket = groups.setdefault(key, {
+            "id": key,
+            "name": product.category.name if product.category else "Kategoriyasiz",
+            "rows": [],
+        })
+        bucket["rows"].append({
             "product": product,
             "is_set": stock is not None,
             "initial": stock.initial_quantity if stock else "",
             "remaining": stock.remaining_quantity if stock else None,
         })
+    shift = Shift.objects.filter(date=today).first()
     return render(request, "orders/daily_stock.html", {
-        "rows": rows,
+        "groups": list(groups.values()),
         "today": today,
         "set_count": len(stock_map),
-        "products_count": len(rows),
+        "products_count": products.count(),
+        "shift_open": shift is not None,
+        "shift": shift,
+        "need_shift": request.GET.get("need_shift") == "1",
         **_base_context(),
     })
 
@@ -418,6 +436,9 @@ def daily_stock_save(request: HttpRequest):
     """
     if not _is_manager(request):
         return HttpResponseBadRequest("Ruxsat berilmagan")
+    if not Shift.is_open():
+        # Smena ochilmagan — portsiya kiritib bo'lmaydi.
+        return redirect("/smena/?need_shift=1")
 
     today = timezone.localdate()
     product_ids = list(
@@ -463,4 +484,18 @@ def daily_stock_save(request: HttpRequest):
                     set_by=request.user,
                 )
 
+    return redirect("orders:daily_stock")
+
+
+@require_POST
+@login_required
+def start_shift(request: HttpRequest):
+    """Bugungi smenani ochish. Shundan keyingina buyurtma qabul
+    qilinadi va portsiya kiritiladi."""
+    if not _is_manager(request):
+        return HttpResponseBadRequest("Ruxsat berilmagan")
+    Shift.objects.get_or_create(
+        date=timezone.localdate(),
+        defaults={"opened_by": request.user},
+    )
     return redirect("orders:daily_stock")

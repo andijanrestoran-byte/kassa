@@ -320,3 +320,29 @@ class Payment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.order_id} / {self.payment_method} / {self.amount}"
+
+
+class Shift(models.Model):
+    """Kassir kunlik smenasi. Smena ochilmaguncha buyurtma qabul
+    qilinmaydi va kunlik portsiya kiritilmaydi."""
+
+    date = models.DateField(unique=True, default=timezone.localdate)
+    opened_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="opened_shifts",
+    )
+    opened_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date"]
+        verbose_name = "Smena"
+        verbose_name_plural = "Smenalar"
+
+    def __str__(self) -> str:
+        return f"Smena {self.date}"
+
+    @classmethod
+    def is_open(cls, day=None) -> bool:
+        day = day or timezone.localdate()
+        return cls.objects.filter(date=day).exists()
