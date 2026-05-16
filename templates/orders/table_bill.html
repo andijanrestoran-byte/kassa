@@ -25,10 +25,11 @@
             </div>
             <div class="actions">
                 <a class="btn secondary" href="{% url 'orders:table_print' table.pk %}" target="_blank" rel="noopener">Chekni chiqarish</a>
-                <form method="post" action="{% url 'orders:close_table' table.pk %}" onsubmit="return confirm('Ushbu stoldagi BARCHA hisoblarni yopmoqchimisiz?');">
-                    {% csrf_token %}
-                    <button class="btn danger" type="submit">Hammasini yopish</button>
-                </form>
+                <button type="button" class="btn danger js-pay"
+                        data-bill="" data-amount="{{ total_amount }}"
+                        data-title="Stol #{{ table.number }} — barcha hisoblar">
+                    Hammasini yopish
+                </button>
             </div>
         </div>
 
@@ -56,11 +57,11 @@
                             <h2>Jami: {{ shot.total_amount }}</h2>
                         </div>
                         <div class="actions">
-                            <form method="post" action="{% url 'orders:close_table' table.pk %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="bill_number" value="{{ shot.bill_number }}">
-                                <button class="btn" type="submit">Hisobni yopish</button>
-                            </form>
+                            <button type="button" class="btn js-pay"
+                                    data-bill="{{ shot.bill_number }}" data-amount="{{ shot.total_amount }}"
+                                    data-title="Stol #{{ table.number }} · Hisob #{{ shot.bill_number }}">
+                                Hisobni yopish
+                            </button>
                         </div>
                     </div>
 
@@ -103,4 +104,60 @@
             {% endfor %}
         </div>
     </div>
+
+    <div class="pay-overlay" id="payOverlay" hidden>
+        <div class="pay-modal surface">
+            <h2 style="margin:0 0 6px;">To'lovni qabul qilish</h2>
+            <p class="support-text" id="payTitle" style="margin:0 0 4px;"></p>
+            <div class="pay-amount" id="payAmount"></div>
+            <p class="support-text" style="margin:0 0 18px;">To'lov turini tanlang:</p>
+            <form method="post" action="{% url 'orders:close_table' table.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="bill_number" id="payBill" value="">
+                <div class="pay-actions">
+                    <button class="btn" type="submit" name="payment_method" value="cash">💵 Naqd</button>
+                    <button class="btn secondary" type="submit" name="payment_method" value="card">💳 Karta</button>
+                </div>
+            </form>
+            <button type="button" class="btn ghost" id="payCancel" style="margin-top:14px;width:100%;">Bekor qilish</button>
+        </div>
+    </div>
+
+    <style>
+        .pay-overlay {
+            position: fixed; inset: 0; z-index: 50;
+            background: rgba(0, 0, 0, 0.62);
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .pay-modal { width: 100%; max-width: 400px; padding: 28px; text-align: center; }
+        .pay-amount {
+            font-size: 1.9rem; font-weight: 800; color: var(--accent-strong); margin: 6px 0 14px;
+        }
+        .pay-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .pay-actions .btn { padding: 16px 10px; font-size: 1rem; }
+    </style>
+
+    <script>
+        (function () {
+            var overlay = document.getElementById('payOverlay');
+            if (!overlay) return;
+            var titleEl = document.getElementById('payTitle');
+            var amountEl = document.getElementById('payAmount');
+            var billEl = document.getElementById('payBill');
+            function open(btn) {
+                titleEl.textContent = btn.getAttribute('data-title') || '';
+                amountEl.textContent = (btn.getAttribute('data-amount') || '0') + " so'm";
+                billEl.value = btn.getAttribute('data-bill') || '';
+                overlay.hidden = false;
+            }
+            function close() { overlay.hidden = true; }
+            document.querySelectorAll('.js-pay').forEach(function (b) {
+                b.addEventListener('click', function () { open(b); });
+            });
+            document.getElementById('payCancel').addEventListener('click', close);
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) close();
+            });
+        })();
+    </script>
 {% endblock %}

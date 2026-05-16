@@ -138,6 +138,14 @@
             <span>{{ total_amount }}</span>
         </div>
 
+        {% if payment_label %}
+            <div class="line"></div>
+            <div class="row">
+                <span>To'lov turi</span>
+                <strong>{{ payment_label }}</strong>
+            </div>
+        {% endif %}
+
         <div class="actions">
             <button class="btn" type="button" onclick="window.print()">Chop etish</button>
             <a class="btn secondary" href="{% url 'orders:table_bill' table.pk %}">Orqaga</a>

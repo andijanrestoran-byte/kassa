@@ -15,6 +15,7 @@ from .models import (
     MenuCategory,
     Order,
     OrderItem,
+    Payment,
     Product,
     ProductDailyStock,
     Shift,
@@ -133,29 +134,67 @@ def kitchen_print(request: HttpRequest, pk: int):
     return render(request, "orders/kitchen_print.html", {"order": order, "auto_print": True})
 
 
+PAYMENT_LABELS = {
+    Payment.Method.CASH: "Naqd",
+    Payment.Method.CARD: "Karta",
+}
+
+
 @require_POST
 @login_required
 def close_table(request: HttpRequest, table_id: int):
     table = get_object_or_404(DiningTable, pk=table_id)
     bill_number = request.POST.get("bill_number")
-    
+
+    payment_method = request.POST.get("payment_method")
+    if payment_method not in (Payment.Method.CASH, Payment.Method.CARD):
+        payment_method = Payment.Method.CASH
+
     orders = Order.objects.filter(table=table, status__in=ACTIVE_ORDER_STATUSES)
     if bill_number:
         orders = orders.filter(bill_number=bill_number)
-    
-    orders = orders.prefetch_related("items")
-    
+
+    orders = list(
+        orders.select_related("waiter", "table").prefetch_related("items__product")
+    )
+
+    if not orders:
+        return redirect("orders:table_bill", table_id=table_id)
+
+    total_paid = Decimal("0")
     with transaction.atomic():
         for order in orders:
-            order.items.filter(status=OrderItem.Status.PENDING).update(status=OrderItem.Status.ACCEPTED)
+            order.items.filter(status=OrderItem.Status.PENDING).update(
+                status=OrderItem.Status.ACCEPTED
+            )
+            amount = order.payable_amount
+            if not hasattr(order, "payment"):
+                Payment.objects.create(
+                    order=order,
+                    payment_method=payment_method,
+                    amount=amount,
+                    cashier=request.user,
+                )
+            total_paid += amount
             order.status = Order.Status.COMPLETED
             order.save(update_fields=["status", "updated_at"])
-            
+
     # Agar barcha shotlar yopilgan bo'lsa, ofitsantlarni bo'shatamiz
     if not Order.objects.filter(table=table, status__in=ACTIVE_ORDER_STATUSES).exists():
         table.assigned_waiters.clear()
-        
-    return redirect("orders:table_bill", table_id=table_id)
+
+    # Yopilgan hisob uchun chek (to'lov turi bilan) — avtomatik chop etiladi.
+    items_count = sum(order.items.count() for order in orders)
+    return render(request, "orders/table_print.html", {
+        "table": table,
+        "active_orders": orders,
+        "orders_count": len(orders),
+        "items_count": items_count,
+        "total_amount": total_paid,
+        "payment_method": payment_method,
+        "payment_label": PAYMENT_LABELS.get(payment_method, "Naqd"),
+        "auto_print": True,
+    })
 
 
 @require_POST
