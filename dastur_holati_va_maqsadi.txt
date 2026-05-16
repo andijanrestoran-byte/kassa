@@ -1,70 +1,132 @@
-DASTURXON LOYIHASI HOLATI VA MAQSADI
-Sana: 2026-05-13
+DASTURXON LOYIHASI — HOLAT VA MAQSAD
+Oxirgi yangilangan: 2026-05-16
 
+====================================================================
+0. REPOLAR VA JOYLASHUV
+====================================================================
+- Backend (kassa)   : C:\Users\xasan\PycharmProjects\andijan
+                       GitHub: andijanrestoran-byte/kassa  (branch: main)
+                       Django 6 + DRF, SQLite (db.sqlite3). Serverga main'dan deploy.
+- Mobil (restoran)  : C:\Users\xasan\AndroidStudioProjects\andijan
+                       GitHub: andijanrestoran-byte/restoran (branch: main)
+                       Flutter ilova (ofitsant/direktor).
+- Web panel dizayni : dark zamonaviy SaaS tema (Manrope, neon-lime accent),
+                       sidebar ikonali, guruhlangan navigatsiya.
+
+====================================================================
 1. LOYIHA MAQSADI
+====================================================================
+Restoran operatsiyalarini avtomatlashtirish:
+- Direktor : to'liq nazorat, xodimlar, moliyaviy hisobotlar.
+- Kassir   : smena, menyu, kunlik portsiya, buyurtma qabul, to'lov/hisob yopish.
+- Ofitsant : stolga birikish, buyurtma olish (mobil ilova).
+- Mijoz    : QR orqali menyu ko'rish va o'z-o'ziga xizmat (web sahifa).
+- Multi-shot: bitta stolga bir nechta mustaqil hisob (bill_number 1-10).
 
-Bu loyiha restoran operatsiyalarini avtomatlashtirish uchun mo'ljallangan backend tizimdir.
-Asosiy maqsad:
-- Direktor: To'liq nazorat, xodimlar boshqaruvi va moliyaviy hisobotlar.
-- Kassir: Buyurtmalarni qabul qilish, oshxona sig'imini boshqarish va hisob-kitob (to'lovlarni yopish).
-- Ofitsant: Stolga birikish, buyurtma olish va mijozlarga xizmat ko'rsatish.
-- Mijoz: QR-kod orqali menyu ko'rish va mustaqil buyurtma berish (o'z-o'ziga xizmat).
-- Multi-shot: Bitta stolga bir nechta mustaqil guruhlar o'tirishi va alohida hisob (bill) to'lashi imkoniyati.
+====================================================================
+2. ROLLAR BO'YICHA HOZIRGI IMKONIYATLAR (ISHLAYDI, TEKSHIRILGAN)
+====================================================================
 
-2. TEXNIK HOLAT (STABILIZATSIYA QILINGAN)
+2.1. DIREKTOR
+- Ofitsant CRUD (API): yaratish/tahrirlash/o'chirish.
+- Hisobotlar (API): kunlik/haftalik/oylik tushum, ofitsant unumdorligi,
+  ofitsant batafsil (qaysi taomlar).
+- Naqd/Karta savdolari: Payment yozuvlaridan avtomatik agregatlanadi
+  (RevenueReport + dashboard summary). Hisob yopilganda tushadi.
+- Web panelga ham kira oladi (kassir bilan bir xil sahifalar).
 
-- Backend: Django 6.0.5 + DRF.
-- Testlar: Barcha testlar (28 tadan 28 tasi) muvaffaqiyatli o'tmoqda.
-- Xavfsizlik: 
-    - CORS_ALLOW_ALL_ORIGINS o'chirildi, faqat ishonchli domenlar (Whitelist) ruxsat etilgan.
-    - Legacy (ApiToken) autentifikatsiya butunlay olib tashlandi.
-    - Faqat Session (Web) va JWT (API) auth ishlatiladi.
-- Bazadagi konfliktlar: Migratsiyalardagi foydalanuvchi yaratish qismlari test muhiti uchun Guard qilindi, UNIQUE constraint xatoliklari bartaraf etildi.
+2.2. KASSIR (Web panel — asosiy ish joyi)
+- SMENA: /smena/  — "Smenani boshlash" tugmasi. Smena ochilmaguncha:
+    * buyurtma QABUL QILIB BO'LMAYDI (web accept + API cashier accept bloklangan)
+    * kunlik PORTSIYA kiritib bo'lmaydi
+  Smena ochilgach: kategoriya tablari bo'yicha portsiya jadvali.
+  Iste'mol qilingan portsiya saqlanadi (qolgan = yangi_boshlang'ich - iste'mol).
+- MENYU: /menu/  — to'liq CRUD (nom, kategoriya, narx, tavsif, faol/nofaol,
+  "Rad etish mumkin" katagi). Kategoriya qo'shish. Kategoriya tablari bo'yicha.
+  "Rad etilmaydi" deb belgilangan taom ro'yxatda pill bilan ko'rinadi.
+- BUYURTMALAR: /orders/  — faqat faol; karta ko'rinishi (Stol #N, summa,
+  ofitsant, mahsulot soni). Smena yopiq bo'lsa ogohlantirish banneri.
+- BUYURTMA TAFSILOTI: /orders/<id>/  — itemni rad etish. Lekin
+  is_rejectable=False taom rad ETIB BO'LMAYDI (bloklanadi, banner).
+- STOLLAR: /tables/  — har stol, faol hisoblar. 20s da yangilanadi.
+- STOL HISOBI: /tables/<id>/  — shot bo'yicha. "Hisobni yopish" /
+  "Hammasini yopish" bosilganda TO'LOV MODALI chiqadi (Naqd / Karta).
+    * tanlangach har order uchun Payment yaratiladi (amount=payable, cashier)
+    * order COMPLETED bo'ladi, chek avtomatik chiqadi
+    * chekda "To'lov turi: Naqd/Karta" qatori bor
+- STOLLAR QR: /stollar-qr/  — barcha stollar QR rasmi (data-URI),
+  "Hammasini chop etish" (toza print) + alohida yuklab olish.
+  QR -> mijoz sahifasi /m/<token>/.
+- XODIMLAR: /waiters/  — ofitsant ro'yxati/qo'shish/o'chirish.
+- BOSHQARUV: /  — bo'limlarga kirish dashboard.
 
-3. ROLLAR BO'YICHA HOZIRGI IMKONIYATLAR
+2.3. OFITSANT (Flutter mobil ilova)
+- Stolga birikish, buyurtma olish (stol + shot raqami).
+- Ofitsant zakazi avtomatik "Accepted" (kassir tasdiqlashi shart emas).
+- Menyuda har taomda:
+    * "Bugun: N porsiya" (remaining_today) — tugaganda kulrang + "Tugadi",
+      + tugma bloklanadi, limitga yetganda ham bloklanadi.
+    * "Rad etilmaydi" badge (is_rejectable=False bo'lsa).
+- Ko'p guruhli xizmat: bitta stolga 10 tagacha shot.
 
-3.1. DİREKTOR (Web Dashboard + API)
-- Ofitsantlarni boshqarish: Yaratish, tahrirlash va ishdan bo'shatish (deaktivatsiya).
-- Menyu boshqaruvi: Kategoriyalar va taomlarni to'liq CRUD qilish.
-- Hisobotlar: Kunlik, haftalik va oylik tushumlar, ofitsantlar unumdorligi.
-- QR Kod: Har bir stol uchun unikal QR kodlarni generatsiya qilish.
-- Xavfsizlik nazorati: Tizimga kirish va rollarni boshqarish.
+2.4. MIJOZ (Web — QR self-service, autentifikatsiyasiz)
+- /m/<qr_token>/            : mobil menyu (kategoriya tablari, narx,
+  portsiya, "Rad etilmaydi" belgisi), savat (+/-), buyurtma berish
+  (ism + izoh). Tugagan taom ko'rsatiladi lekin tanlanmaydi.
+- /m/<qr_token>/order/      : buyurtma yaratish (CLIENT manba,
+  sig'im tekshiriladi va kamaytiriladi).
+- /m/order/<id>/?t=<token>  : holat kuzatuvi (15s auto-refresh),
+  har item holati (Kutilmoqda/Qabul/Rad), jami.
+- /m/order/<id>/items/<id>/reject/ : mijoz rad etiluvchi taomni rad etadi
+  (is_rejectable hurmat qilinadi, sig'im qaytadi, hammasi rad bo'lsa cancel).
+- Backend public API ham bor (api/v1/public/...), web sahifa shu mantiqni
+  model darajasida ko'zgu qiladi.
 
-3.2. KASSIR (Web Dashboard + API)
-- Oshxona sig'imi (Stock): Har kuni taomlar sonini belgilash (masalan: bugun faqat 20 ta manti bor).
-- Buyurtmalar nazorati: Mijozdan kelgan buyurtmalarni qabul qilish yoki rad etish. (Ofitsant zakazlari avtomatik tasdiqlanadi).
-- Oshxona cheki: Tasdiqlangan buyurtmalar uchun oshxonaga qisqa chek chiqarish (taomlar va stol raqami bilan).
-- Stol/Shot boshqaruvi (YANGI): 
-    - Bitta stoldagi har bir shotni alohida ko'rish.
-    - Har bir shotni alohida yopish va to'lovni qabul qilish.
-    - Barcha shotlarni bittada yopish imkoniyati.
-- Chek chiqarish: Har bir shot yoki stol uchun alohida chek ma'lumotlarini olish.
+====================================================================
+3. MUHIM MODELLAR
+====================================================================
+- DiningTable : qr_token (avto), assigned_waiters, current_status.
+- Order       : external_id, bill_number(1-10), status, order_source
+                (waiter/client), client_name, public_token,
+                total_amount/payable_amount.
+- OrderItem   : product, quantity, status (pending/accepted/rejected),
+                rejection_reason, line_total.
+- Product     : price, is_active, is_rejectable, image, get_today_remaining().
+- MenuCategory: name, sort_order.
+- ProductDailyStock : (product,date) unique, initial/remaining_quantity.
+- Shift       : date unique, opened_by, opened_at. Shift.is_open(day).
+- Payment     : order(1:1), payment_method(cash/card/mixed), amount, cashier.
 
-3.3. OFITSANT (Mobil ilova + API)
-- Stolga birikish: Bo'sh stolni tanlash va o'ziga biriktirish.
-- Buyurtma olish: Stol va Shot raqamini tanlab, buyurtma yaratish. (Yuborilgan zahoti oshxonada ko'rinadi va kassir tasdiqlashi shart emas).
-- Status nazorati: Buyurtma holatini (tayyor bo'layotgani, rad etilgani) real-vaqtda kuzatish.
-- Ko'p guruhli xizmat: Bitta stolga bir nechta shot (maksimal 10 ta) ochish imkoniyati.
+====================================================================
+4. TEXNIK HOLAT
+====================================================================
+- Auth: Web=Session, API=JWT. Legacy ApiToken yo'q.
+- `python manage.py check` toza. Migratsiyalar: oxirgisi 0014_shift.
+- Har o'zgarishdan keyin test-client smoke testlari bilan tekshirilgan.
+- Flutter: `flutter analyze` toza (withValues konventsiyasi).
 
-3.4. MIJOZ (Web/Public API)
-- QR Menyu: Stol ustidagi kodni skanerlab, joriy menyu va narxlarni ko'rish.
-- Mustaqil buyurtma: Ofitsantni kutmasdan, ismini kiritib buyurtma berish.
-- Status kuzatish: O'z buyurtmasi holatini ko'rib turish.
-- Rad etish: Agar taom hali tayyorlanmagan bo'lsa, o'z buyurtmasidan ma'lum bir pozitsiyani rad etish.
+====================================================================
+5. SHU SESSIYADAGI ASOSIY ISHLAR (2026-05-16)
+====================================================================
+- Web panel to'liq dark zamonaviy redesign (base.html dizayn tizimi).
+- Buyurtmalarda xunuk external_id (API-..) olib tashlandi -> "Stol #N".
+- Kassir: menyu CRUD web + kunlik portsiya jadvali (kategoriya tablari).
+- Smena tizimi (Shift modeli) + gating: smena boshlanmaguncha qabul/portsiya yo'q.
+- Hisob yopishda Naqd/Karta modali + Payment yaratish + chekda to'lov turi.
+- is_rejectable: web reject_item bloklash + ofitsant/mijoz UI'da ko'rsatish.
+- Mijoz QR self-service web sahifasi (menyu/buyurtma/holat/reject).
+- "Stollar QR" sahifasi (chop etish/yuklab olish), QR -> /m/<token>/.
 
-4. MUHIM MODELLAR VA TARKIB
-
-- DiningTable: Endi assigned_waiters va faol shotlarni boshqaradi.
-- Order: bill_number (1-10) maydoniga ega, bu esa bitta stolda bir nechta guruhga xizmat ko'rsatishni ta'minlaydi.
-- ProductDailyStock: Kassir tomonidan boshqariladigan kunlik taomlar limiti.
-- Payment: Har bir buyurtma (shot) uchun alohida to'lov yozuvi.
-
-5. HOZIRGI STATUS: STABIL VA TAYYOR
-
-Loyiha backend qismi stabil holatga keltirildi. Barcha testlar "yashil", xavfsizlik kuchaytirilgan. Ofitsant buyurtmalari avtomatik qabul qilinishi va oshxona uchun maxsus chek tizimi joriy etildi.
-
-6. SO'NGGI YANGILANISHLAR (2026-05-13)
-
-- Avtomatik tasdiqlash: Ofitsant zakaz urgan zahoti "Accepted" statusiga o'tadi. Kassir tasdiqlashi kutib o'tirilmaydi.
-- Oshxona cheki (Kitchen Print): Faqat taomlar va stol raqami ko'rsatilgan, narxlarsiz qisqa chek chiqarish imkoniyati qo'shildi.
-- Multi-shot tizimi: Bitta stolga bir nechta (10 tagacha) mustaqil shotlar ochish va alohida yopish imkoniyati to'liq ishga tushirildi.
+====================================================================
+6. ERTAGA DAVOM ETTIRISH UCHUN ESLATMALAR / KEYINGI ISHLAR
+====================================================================
+- (Tekshirish) Mijoz buyurtmasi NEW bo'lib tushadi; kassir smena ochib
+  qabul qilishi kerak — real qurilmada oqimni sinab ko'rish.
+- (G'oya) Mijoz sahifasiga "savatni tozalash" / miqdorni ko'rsatish.
+- (G'oya) Direktorga naqd/karta savdolarini web panelda alohida sahifa
+  (hozir faqat API/dashboard'da).
+- (Eslatma) Smena yopish (kun oxirida) funksiyasi yo'q — kerak bo'lsa
+  Shift'ga closed_at qo'shib, kun bo'yi bitta smena ishlaydi.
+- (Xavfsizlik) git remote URL'da GitHub PAT ochiq turibdi — token
+  yangilab, credential manager/SSH ga o'tkazish tavsiya etiladi.
+- Print sahifalari (table_print, kitchen_print) ataylab oq fon (printer uchun).
