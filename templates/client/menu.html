@@ -52,15 +52,30 @@
         label{display:block;font-weight:600;font-size:.86rem;margin:14px 0 6px;}
         input,textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;color:var(--text);}
         .ghost{background:#fff;color:var(--accent);border:1px solid var(--line);margin-top:10px;}
+        /* Rejim tanlash: default — faqat menyu ko'rish, opt-in bilan o'ziga xizmat */
+        .mode{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:8px;}
+        .mode button{flex:1;padding:11px 8px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-weight:700;font-size:.9rem;}
+        .mode button.active{background:var(--accent);color:#fff;}
+        .hint{color:var(--muted);font-size:.82rem;text-align:center;margin:0 2px 12px;}
+        /* "Menyuni ko'rish" rejimida buyurtma elementlari yashirin */
+        body.browse .qty{display:none;}
+        body.browse .bar{display:none;}
+        body.browse{padding-bottom:24px;}
     </style>
 </head>
-<body>
+<body class="browse">
     <header>
         <h1>DASTURXON</h1>
-        <div class="sub">Stol #{{ table.number }} · O'z-o'ziga xizmat</div>
+        <div class="sub">Stol #{{ table.number }}</div>
     </header>
 
     <div class="wrap">
+        <div class="mode" id="mode">
+            <button type="button" data-mode="browse" class="active">📖 Menyuni ko'rish</button>
+            <button type="button" data-mode="order">🍽️ O'ziga xizmat</button>
+        </div>
+        <p class="hint" id="modeHint">Hozir faqat menyuni ko'ryapsiz. Buyurtma berish uchun yuqoridagi O'ziga xizmat tugmasini bosing.</p>
+
         {% if error %}<div class="err">{{ error }}</div>{% endif %}
 
         <div class="tabs" id="tabs">
@@ -187,6 +202,22 @@
             });
             document.getElementById('closeCart').addEventListener('click',function(){ov.hidden=true;});
             ov.addEventListener('click',function(e){if(e.target===ov)ov.hidden=true;});
+
+            // ── Rejim: "Menyuni ko'rish" (default) ↔ "O'ziga xizmat" ──
+            var modeBox=document.getElementById('mode'), hint=document.getElementById('modeHint');
+            modeBox.addEventListener('click',function(e){
+                var b=e.target.closest('button'); if(!b)return;
+                modeBox.querySelectorAll('button').forEach(function(x){x.classList.remove('active');});
+                b.classList.add('active');
+                if(b.dataset.mode==='order'){
+                    document.body.classList.remove('browse');
+                    hint.textContent="O'ziga xizmat yoqildi — taomlarni tanlab buyurtma bering.";
+                } else {
+                    document.body.classList.add('browse');
+                    hint.textContent="Hozir faqat menyuni ko'ryapsiz. Buyurtma berish uchun yuqoridagi O'ziga xizmat tugmasini bosing.";
+                    ov.hidden=true;
+                }
+            });
         })();
     </script>
 </body>
