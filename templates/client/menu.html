@@ -3,78 +3,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4A2C1A">
     <title>DASTURXON — Stol #{{ table.number }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg:#f7f1e8; --panel:#fff; --line:rgba(74,45,31,.12);
-            --text:#3d2418; --muted:#8a7a6a; --accent:#8a4b2a; --accent-strong:#6f3a1f;
-            --ok:#2b7a4b; --danger:#b91c1c; --warn:#b45309;
+        :root{
+            --espresso:#4A2C1A; --coffee:#8A4B2A; --caramel:#B26A3C; --gold:#CB8A4E;
+            --cream:#F7F1E8; --sand:#EFE3D2; --ink:#2E221C; --muted:#8a7a6a;
+            --panel:#fffdf9; --line:rgba(74,45,31,.10); --line-soft:rgba(74,45,31,.06);
+            --ok:#2b7a4b; --danger:#9C3C24; --warn:#C9821F;
+            --shadow-sm:0 4px 14px rgba(74,45,31,.07);
+            --shadow-md:0 16px 38px rgba(74,45,31,.13);
+            --shadow-lg:0 -10px 34px rgba(74,45,31,.16);
+            --r:18px;
         }
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-        body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--text);padding-bottom:96px;}
+        html{scroll-behavior:smooth;}
+        body{
+            margin:0; font-family:"Manrope",system-ui,sans-serif; color:var(--ink);
+            background:
+                radial-gradient(1100px circle at 100% -6%, rgba(203,138,78,.16), transparent 42%),
+                radial-gradient(900px circle at -12% 6%, rgba(138,75,42,.10), transparent 40%),
+                linear-gradient(180deg, var(--cream), var(--sand));
+            background-attachment:fixed;
+            padding-bottom:112px; min-height:100vh;
+            -webkit-font-smoothing:antialiased;
+        }
         a{color:inherit;text-decoration:none;}
-        header{position:sticky;top:0;z-index:10;background:linear-gradient(135deg,var(--accent),var(--accent-strong));color:#fff;padding:18px 18px 14px;}
-        header h1{margin:0;font-size:1.3rem;letter-spacing:.04em;text-transform:uppercase;}
-        header .sub{opacity:.9;font-size:.85rem;margin-top:3px;}
-        .wrap{padding:14px;}
-        .err{background:#fae3e0;color:var(--danger);border:1px solid rgba(185,28,28,.3);padding:12px 14px;border-radius:12px;margin-bottom:12px;font-size:.9rem;}
-        .tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;}
-        .tab{flex:none;padding:8px 16px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);font-weight:700;font-size:.85rem;}
-        .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-        .cat-title{font-size:1.05rem;font-weight:800;margin:14px 2px 8px;}
-        .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 6px 18px rgba(74,45,31,.06);}
-        .card.dim{opacity:.55;}
-        .card .top{display:flex;justify-content:space-between;gap:10px;}
-        .name{font-weight:700;font-size:1rem;}
-        .desc{color:var(--muted);font-size:.82rem;margin-top:3px;}
-        .price{font-weight:800;color:var(--accent-strong);white-space:nowrap;}
-        .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-        .badge{font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:999px;}
-        .b-ok{background:#e3f3e9;color:var(--ok);}
-        .b-out{background:#fae3e0;color:var(--danger);}
-        .b-norej{background:#f7e7cf;color:var(--warn);}
-        .qty{display:flex;align-items:center;gap:14px;margin-top:12px;}
-        .qty button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:1.3rem;font-weight:700;color:var(--accent);}
-        .qty button:disabled{opacity:.35;}
-        .qty .n{font-size:1.1rem;font-weight:800;min-width:22px;text-align:center;}
-        .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:14px 16px;display:flex;gap:12px;align-items:center;box-shadow:0 -6px 20px rgba(74,45,31,.08);}
-        .bar .sum{flex:1;}
-        .bar .sum b{display:block;font-size:1.15rem;}
-        .bar .sum span{color:var(--muted);font-size:.8rem;}
-        .btn{background:var(--accent);color:#fff;border:none;padding:14px 22px;border-radius:12px;font-size:1rem;font-weight:700;}
-        .btn:disabled{opacity:.4;}
-        .btn.block{width:100%;}
-        .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;z-index:20;}
+
+        /* ---------- Header ---------- */
+        header{
+            position:sticky; top:0; z-index:30; color:#fff;
+            background:linear-gradient(135deg,var(--coffee) 0%,var(--espresso) 72%);
+            padding:20px 20px 18px; border-radius:0 0 26px 26px;
+            box-shadow:0 12px 30px rgba(74,45,31,.28); overflow:hidden;
+            transition:padding .26s ease, box-shadow .26s ease;
+        }
+        header.shrink{padding:11px 20px;box-shadow:0 8px 22px rgba(74,45,31,.36);}
+        header::before,header::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.06);pointer-events:none;}
+        header::before{width:190px;height:190px;right:-56px;top:-78px;}
+        header::after{width:120px;height:120px;right:66px;bottom:-76px;background:rgba(255,255,255,.05);}
+        .h-row{display:flex;align-items:center;gap:13px;position:relative;}
+        .h-mark{
+            width:46px;height:46px;border-radius:14px;flex:none;
+            background:linear-gradient(135deg,var(--gold),var(--caramel));
+            display:flex;align-items:center;justify-content:center;font-size:1.45rem;
+            box-shadow:0 8px 18px rgba(0,0,0,.25); transition:transform .26s ease;
+        }
+        header.shrink .h-mark{transform:scale(.86);}
+        header h1{margin:0;font-family:"Playfair Display",serif;font-size:1.5rem;letter-spacing:.05em;font-weight:800;line-height:1;}
+        header .sub{opacity:.92;font-size:.82rem;margin-top:5px;display:flex;align-items:center;gap:7px;}
+        .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 3px rgba(203,138,78,.32);}
+
+        .wrap{padding:16px 14px 0;max-width:560px;margin:0 auto;}
+
+        /* ---------- Mode toggle ---------- */
+        .mode{position:relative;display:flex;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:6px;box-shadow:var(--shadow-sm);margin-bottom:10px;animation:rise .45s both;}
+        .mode .glider{position:absolute;top:6px;bottom:6px;left:6px;width:calc(50% - 6px);border-radius:11px;background:linear-gradient(135deg,var(--coffee),var(--espresso));box-shadow:0 6px 16px rgba(138,75,42,.42);transition:transform .34s cubic-bezier(.34,1.36,.5,1);}
+        .mode.order .glider{transform:translateX(100%);}
+        .mode button{flex:1;position:relative;z-index:1;padding:12px 8px;border:none;background:transparent;color:var(--muted);font-weight:700;font-size:.92rem;font-family:inherit;transition:color .26s;cursor:pointer;}
+        .mode button.active{color:#fff;}
+        .hint{color:var(--muted);font-size:.82rem;text-align:center;margin:0 6px 14px;line-height:1.45;transition:opacity .3s;animation:rise .5s both;animation-delay:.05s;}
+
+        .err{background:rgba(156,60,36,.10);color:var(--danger);border:1px solid rgba(156,60,36,.28);padding:13px 15px;border-radius:14px;margin-bottom:14px;font-size:.9rem;font-weight:600;animation:rise .4s both;}
+
+        /* ---------- Tabs ---------- */
+        .tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none;animation:rise .5s both;animation-delay:.1s;}
+        .tabs::-webkit-scrollbar{display:none;}
+        .tab{flex:none;padding:9px 17px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--muted);font-weight:700;font-size:.84rem;cursor:pointer;transition:transform .18s, background .22s, color .22s, box-shadow .22s;font-family:inherit;white-space:nowrap;}
+        .tab:active{transform:scale(.94);}
+        .tab.active{background:linear-gradient(135deg,var(--coffee),var(--espresso));color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(138,75,42,.34);}
+
+        /* ---------- Category + cards ---------- */
+        .cat-title{font-family:"Playfair Display",serif;font-size:1.22rem;font-weight:700;margin:18px 4px 12px;display:flex;align-items:center;gap:10px;color:var(--espresso);}
+        .cat-title::before{content:"";width:22px;height:2px;border-radius:2px;background:var(--gold);}
+        .card{background:var(--panel);border:1px solid var(--line-soft);border-radius:var(--r);padding:15px;margin-bottom:13px;box-shadow:var(--shadow-sm);animation:rise .5s both;animation-delay:calc(var(--d,0) * 55ms);transition:transform .18s, box-shadow .26s, border-color .26s;}
+        .card.has{border-color:rgba(203,138,78,.55);box-shadow:0 12px 28px rgba(203,138,78,.22);}
+        .card:active{transform:scale(.992);}
+        .card.dim{opacity:.6;}
+        .card .top{display:flex;gap:13px;}
+        .thumb{width:56px;height:56px;border-radius:15px;flex:none;background:linear-gradient(135deg,var(--sand),#e6d3bc);display:flex;align-items:center;justify-content:center;font-size:1.55rem;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55);overflow:hidden;}
+        .thumb img{width:100%;height:100%;object-fit:cover;}
+        .info{flex:1;min-width:0;}
+        .name{font-weight:700;font-size:1.02rem;letter-spacing:-.01em;}
+        .desc{color:var(--muted);font-size:.82rem;margin-top:3px;line-height:1.35;}
+        .price{font-weight:800;color:var(--espresso);white-space:nowrap;font-size:1.04rem;margin-top:2px;}
+        .price small{font-weight:600;color:var(--muted);font-size:.68rem;}
+        .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+        .badge{font-size:.71rem;font-weight:700;padding:4px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:4px;}
+        .b-ok{background:rgba(43,122,75,.12);color:var(--ok);}
+        .b-out{background:rgba(156,60,36,.12);color:var(--danger);}
+        .b-norej{background:rgba(201,130,31,.15);color:var(--warn);}
+
+        .qty{display:flex;align-items:center;gap:12px;margin-top:14px;}
+        .qty button{width:42px;height:42px;border-radius:13px;border:1px solid var(--line);background:var(--cream);font-size:1.35rem;font-weight:700;color:var(--coffee);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s, background .2s, opacity .2s;}
+        .qty button.inc{background:linear-gradient(135deg,var(--coffee),var(--espresso));color:#fff;border-color:transparent;box-shadow:0 6px 14px rgba(138,75,42,.3);}
+        .qty button:active{transform:scale(.86);}
+        .qty button:disabled{opacity:.3;box-shadow:none;}
+        .qty .n{font-size:1.2rem;font-weight:800;min-width:26px;text-align:center;transition:transform .18s;}
+        .qty .n.bump{transform:scale(1.32);}
+
+        /* ---------- Bottom cart bar ---------- */
+        .bar{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;gap:14px;align-items:center;padding:14px 18px;padding-bottom:max(14px,env(safe-area-inset-bottom));max-width:560px;margin:0 auto;background:rgba(255,253,249,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);box-shadow:var(--shadow-lg);transform:translateY(120%);transition:transform .4s cubic-bezier(.3,1.2,.5,1);}
+        .bar.show{transform:translateY(0);}
+        .bar.pulse{animation:barPulse .4s ease;}
+        .bar .sum{flex:1;line-height:1.2;}
+        .bar .sum b{display:block;font-size:1.18rem;font-weight:800;color:var(--espresso);}
+        .bar .sum span{color:var(--muted);font-size:.78rem;font-weight:600;}
+        .btn{background:linear-gradient(135deg,var(--gold),var(--caramel));color:#fff;border:none;padding:15px 24px;border-radius:14px;font-size:1rem;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 10px 22px rgba(178,106,60,.42);transition:transform .14s, filter .2s;display:inline-flex;align-items:center;gap:9px;}
+        .btn:active{transform:scale(.96);}
+        .btn:disabled{opacity:.45;box-shadow:none;}
+        .btn.block{width:100%;justify-content:center;}
+        .btn.dark{background:linear-gradient(135deg,var(--coffee),var(--espresso));box-shadow:0 10px 22px rgba(138,75,42,.4);}
+
+        /* ---------- Cart sheet ---------- */
+        .overlay{position:fixed;inset:0;background:rgba(46,34,28,.5);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:flex;align-items:flex-end;z-index:40;animation:fade .25s both;}
         .overlay[hidden]{display:none;}
-        .sheet{background:var(--bg);width:100%;border-radius:20px 20px 0 0;padding:20px;max-height:86vh;overflow:auto;}
-        .sheet h2{margin:0 0 12px;}
-        .li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:.92rem;}
-        label{display:block;font-weight:600;font-size:.86rem;margin:14px 0 6px;}
-        input,textarea{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font:inherit;color:var(--text);}
-        .ghost{background:#fff;color:var(--accent);border:1px solid var(--line);margin-top:10px;}
-        /* Rejim tanlash: default — faqat menyu ko'rish, opt-in bilan o'ziga xizmat */
-        .mode{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:8px;}
-        .mode button{flex:1;padding:11px 8px;border:none;border-radius:10px;background:transparent;color:var(--muted);font-weight:700;font-size:.9rem;}
-        .mode button.active{background:var(--accent);color:#fff;}
-        .hint{color:var(--muted);font-size:.82rem;text-align:center;margin:0 2px 12px;}
+        .sheet{background:linear-gradient(180deg,var(--panel),var(--cream));width:100%;max-width:560px;margin:0 auto;border-radius:24px 24px 0 0;padding:8px 20px 22px;max-height:88vh;overflow:auto;box-shadow:0 -20px 50px rgba(0,0,0,.3);animation:sheetUp .38s cubic-bezier(.3,1.1,.5,1);}
+        .grab{width:42px;height:5px;border-radius:99px;background:var(--line);margin:6px auto 14px;}
+        .sheet h2{margin:0 0 14px;font-family:"Playfair Display",serif;font-size:1.4rem;color:var(--espresso);}
+        .li{display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line);font-size:.94rem;}
+        .li:last-of-type{border-bottom:none;}
+        .li b{font-weight:700;}
+        label{display:block;font-weight:700;font-size:.84rem;margin:16px 0 7px;color:var(--ink);}
+        input,textarea{width:100%;padding:13px 15px;border:1px solid var(--line);border-radius:13px;background:#fff;font:inherit;color:var(--ink);transition:border-color .2s, box-shadow .2s;}
+        input:focus,textarea:focus{outline:none;border-color:var(--coffee);box-shadow:0 0 0 3px rgba(138,75,42,.14);}
+        .ghost{background:transparent;color:var(--coffee);border:1px solid var(--line);box-shadow:none;margin-top:10px;}
+
         /* "Menyuni ko'rish" rejimida buyurtma elementlari yashirin */
         body.browse .qty{display:none;}
-        body.browse .bar{display:none;}
-        body.browse{padding-bottom:24px;}
+        body.browse .bar{transform:translateY(120%) !important;}
+
+        .empty{color:var(--muted);text-align:center;padding:48px 0;font-size:.95rem;}
+
+        @keyframes rise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:none;}}
+        @keyframes fade{from{opacity:0;}to{opacity:1;}}
+        @keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+        @keyframes barPulse{0%{transform:translateY(0) scale(1);}40%{transform:translateY(-4px) scale(1.012);}100%{transform:translateY(0) scale(1);}}
+        @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important;}}
     </style>
 </head>
 <body class="browse">
-    <header>
-        <h1>DASTURXON</h1>
-        <div class="sub">Stol #{{ table.number }}</div>
+    <header id="hdr">
+        <div class="h-row">
+            <div class="h-mark">☕</div>
+            <div>
+                <h1>DASTURXON</h1>
+                <div class="sub"><span class="dot"></span>Stol #{{ table.number }} · menyu</div>
+            </div>
+        </div>
     </header>
 
     <div class="wrap">
         <div class="mode" id="mode">
+            <span class="glider"></span>
             <button type="button" data-mode="browse" class="active">📖 Menyuni ko'rish</button>
             <button type="button" data-mode="order">🍽️ O'ziga xizmat</button>
         </div>
-        <p class="hint" id="modeHint">Hozir faqat menyuni ko'ryapsiz. Buyurtma berish uchun yuqoridagi O'ziga xizmat tugmasini bosing.</p>
+        <p class="hint" id="modeHint">Hozir faqat menyuni ko'ryapsiz. Buyurtma berish uchun yuqoridagi <b>O'ziga xizmat</b>ni tanlang.</p>
 
         {% if error %}<div class="err">{{ error }}</div>{% endif %}
 
@@ -91,17 +179,20 @@
                 {% for it in g.items %}
                     {% if it.is_available %}
                         <div class="card" data-id="{{ it.id }}" data-price="{{ it.price }}"
-                             data-remaining="{{ it.remaining|default_if_none:'' }}">
+                             data-remaining="{{ it.remaining|default_if_none:'' }}" style="--d:{{ forloop.counter0 }}">
                             <div class="top">
-                                <div>
+                                <div class="thumb">
+                                    {% if it.image_url %}<img src="{{ it.image_url }}" alt="{{ it.name }}">{% else %}🍽️{% endif %}
+                                </div>
+                                <div class="info">
                                     <div class="name">{{ it.name }}</div>
                                     {% if it.description %}<div class="desc">{{ it.description }}</div>{% endif %}
+                                    <div class="price">{{ it.price }} <small>so'm</small></div>
+                                    <div class="badges">
+                                        {% if it.remaining is not None %}<span class="badge b-ok">✓ Bugun: {{ it.remaining }} ta</span>{% endif %}
+                                        {% if not it.is_rejectable %}<span class="badge b-norej">⚑ Rad etilmaydi</span>{% endif %}
+                                    </div>
                                 </div>
-                                <div class="price">{{ it.price }} so'm</div>
-                            </div>
-                            <div class="badges">
-                                {% if it.remaining is not None %}<span class="badge b-ok">Bugun: {{ it.remaining }} ta</span>{% endif %}
-                                {% if not it.is_rejectable %}<span class="badge b-norej">Rad etilmaydi</span>{% endif %}
                             </div>
                             <div class="qty">
                                 <button type="button" class="dec">−</button>
@@ -110,22 +201,25 @@
                             </div>
                         </div>
                     {% else %}
-                        <div class="card dim">
+                        <div class="card dim" style="--d:{{ forloop.counter0 }}">
                             <div class="top">
-                                <div><div class="name">{{ it.name }}</div></div>
-                                <div class="price">{{ it.price }} so'm</div>
+                                <div class="thumb">🍽️</div>
+                                <div class="info">
+                                    <div class="name">{{ it.name }}</div>
+                                    <div class="price">{{ it.price }} <small>so'm</small></div>
+                                    <div class="badges"><span class="badge b-out">✕ Bugun tugadi</span></div>
+                                </div>
                             </div>
-                            <div class="badges"><span class="badge b-out">Bugun tugadi</span></div>
                         </div>
                     {% endif %}
                 {% endfor %}
             </div>
         {% empty %}
-            <p style="color:var(--muted);text-align:center;padding:40px 0;">Menyu hozircha bo'sh.</p>
+            <p class="empty">Menyu hozircha bo'sh.</p>
         {% endfor %}
     </div>
 
-    <div class="bar">
+    <div class="bar" id="bar">
         <div class="sum">
             <b id="barSum">0 so'm</b>
             <span id="barCnt">Savat bo'sh</span>
@@ -135,6 +229,7 @@
 
     <div class="overlay" id="cartOverlay" hidden>
         <div class="sheet">
+            <div class="grab"></div>
             <h2>Buyurtmangiz</h2>
             <div id="cartLines"></div>
             <form method="post" action="{% url 'orders:client_order_create' qr_token %}" id="orderForm">
@@ -144,9 +239,9 @@
                 <input type="text" id="cn" name="client_name" required placeholder="Masalan: Aziz">
                 <label for="nt">Izoh (ixtiyoriy)</label>
                 <textarea id="nt" name="note" rows="2" placeholder="Masalan: tuz kam"></textarea>
-                <button class="btn block" type="submit" style="margin-top:16px;">Tasdiqlash va yuborish</button>
+                <button class="btn dark block" type="submit" style="margin-top:18px;">✓ Tasdiqlash va yuborish</button>
             </form>
-            <button class="btn block ghost" type="button" id="closeCart">Yopish</button>
+            <button class="btn ghost block" type="button" id="closeCart">Yopish</button>
         </div>
     </div>
 
@@ -162,6 +257,7 @@
                 secs.forEach(function(s){s.style.display=(c==='all'||s.dataset.cat===c)?'':'none';});
             });
             function fmt(n){return n.toLocaleString('ru-RU');}
+            var bar=document.getElementById('bar'), openBtn=document.getElementById('openCart');
             function refresh(){
                 var sum=0,cnt=0;
                 Object.keys(cart).forEach(function(id){
@@ -169,7 +265,13 @@
                 });
                 document.getElementById('barSum').textContent=fmt(sum)+" so'm";
                 document.getElementById('barCnt').textContent=cnt?cnt+' ta mahsulot':'Savat bo‘sh';
-                document.getElementById('openCart').disabled=cnt===0;
+                openBtn.disabled=cnt===0;
+                // Buyurtma rejimida savatda mahsulot bo'lsa pastki panel ko'rinadi.
+                if(!document.body.classList.contains('browse') && cnt>0){
+                    bar.classList.add('show');
+                } else {
+                    bar.classList.remove('show');
+                }
             }
             document.querySelectorAll('.card[data-id]').forEach(function(card){
                 var id=card.dataset.id, price=parseInt(card.dataset.price,10)||0;
@@ -177,22 +279,25 @@
                 names[id]={name:card.querySelector('.name').textContent,price:price};
                 cart[id]=0;
                 var nEl=card.querySelector('.n'), inc=card.querySelector('.inc'), dec=card.querySelector('.dec');
-                function upd(){
+                function bump(){nEl.classList.add('bump');setTimeout(function(){nEl.classList.remove('bump');},180);}
+                function upd(changed){
                     nEl.textContent=cart[id];
                     dec.disabled=cart[id]<=0;
                     inc.disabled=(rem!==null && cart[id]>=rem);
+                    card.classList.toggle('has',cart[id]>0);
+                    if(changed){bump(); bar.classList.remove('pulse'); void bar.offsetWidth; bar.classList.add('pulse');}
                     refresh();
                 }
-                inc.addEventListener('click',function(){ if(rem!==null&&cart[id]>=rem)return; cart[id]++; upd();});
-                dec.addEventListener('click',function(){ if(cart[id]>0)cart[id]--; upd();});
-                upd();
+                inc.addEventListener('click',function(){ if(rem!==null&&cart[id]>=rem)return; cart[id]++; upd(true);});
+                dec.addEventListener('click',function(){ if(cart[id]>0){cart[id]--; upd(true);} });
+                upd(false);
             });
             var ov=document.getElementById('cartOverlay');
-            document.getElementById('openCart').addEventListener('click',function(){
+            openBtn.addEventListener('click',function(){
                 var lines=document.getElementById('cartLines'), html='', arr=[];
                 Object.keys(cart).forEach(function(id){
                     var q=cart[id]; if(q>0){
-                        html+='<div class="li"><span>'+names[id].name+' × '+q+'</span><span>'+fmt(q*names[id].price)+"</span></div>";
+                        html+='<div class="li"><span>'+names[id].name+' × '+q+'</span><b>'+fmt(q*names[id].price)+" so'm</b></div>";
                         arr.push({menu_item_id:parseInt(id,10),quantity:q});
                     }
                 });
@@ -211,13 +316,22 @@
                 b.classList.add('active');
                 if(b.dataset.mode==='order'){
                     document.body.classList.remove('browse');
-                    hint.textContent="O'ziga xizmat yoqildi — taomlarni tanlab buyurtma bering.";
+                    modeBox.classList.add('order');
+                    hint.innerHTML="O'ziga xizmat yoqildi — taomlarni tanlab buyurtma bering.";
                 } else {
                     document.body.classList.add('browse');
-                    hint.textContent="Hozir faqat menyuni ko'ryapsiz. Buyurtma berish uchun yuqoridagi O'ziga xizmat tugmasini bosing.";
+                    modeBox.classList.remove('order');
+                    hint.innerHTML="Hozir faqat menyuni ko'ryapsiz. Buyurtma berish uchun yuqoridagi <b>O'ziga xizmat</b>ni tanlang.";
                     ov.hidden=true;
                 }
+                refresh();
             });
+
+            // ── Header scroll-da ixchamlashadi ──
+            var hdr=document.getElementById('hdr');
+            window.addEventListener('scroll',function(){
+                if(window.scrollY>14){hdr.classList.add('shrink');}else{hdr.classList.remove('shrink');}
+            },{passive:true});
         })();
     </script>
 </body>
