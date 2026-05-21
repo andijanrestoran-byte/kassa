@@ -6,7 +6,7 @@ from django.test import override_settings
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from .models import DiningTable, MenuCategory, Order, OrderItem, Payment, Product, ProductDailyStock, UserProfile, Waiter
+from .models import DiningTable, MenuCategory, Order, OrderItem, Payment, Product, ProductDailyStock, Shift, UserProfile, Waiter
 
 
 class OrderFlowTests(TestCase):
@@ -160,7 +160,8 @@ class OrderFlowTests(TestCase):
 
         response = self.client.post(reverse("orders:close_table", args=[table.pk]))
 
-        self.assertEqual(response.status_code, 302)
+        # close_table endi redirect emas, to'lov chekini (table_print.html) render qiladi.
+        self.assertEqual(response.status_code, 200)
         order.refresh_from_db()
         self.assertEqual(order.status, Order.Status.COMPLETED)
         self.assertEqual(table.assigned_waiters.count(), 0)
@@ -171,6 +172,8 @@ class OrderFlowTests(TestCase):
         product = Product.objects.create(name="Shashlik", price=25000)
         order = Order.objects.create(external_id="MOB-1007", waiter=self.waiter, table=table)
         OrderItem.objects.create(order=order, product=product, quantity=1)
+        # Buyurtma qabul qilish ochiq smenani talab qiladi.
+        Shift.objects.create(opened_by=self.user)
 
         response = self.client.post(reverse("orders:accept_order", args=[order.pk]))
 
@@ -203,8 +206,11 @@ class OrderFlowTests(TestCase):
         self.assertContains(dashboard_response, "Bo'limlar bo'yicha boshqaruv")
         self.assertNotContains(dashboard_response, "Operatsion buyurtmalar")
         self.assertContains(orders_response, "Operatsion buyurtmalar")
-        self.assertContains(orders_response, "MOB-1005")
-        self.assertContains(rejected_response, "MOB-1006")
+        # external_id endi UI'da ko'rsatilmaydi (-> "Stol #N"). Faol buyurtma
+        # operatsion ro'yxatda o'z tafsilot havolasi bilan ko'rinishi kerak.
+        self.assertContains(orders_response, reverse("orders:order_detail", args=[active.pk]))
+        # Rad etilgan buyurtma rad etilganlar bo'limida (buyurtma #id + ofitsant).
+        self.assertContains(rejected_response, f"buyurtma #{rejected.id}")
         self.assertContains(rejected_response, "Hasan")
         self.assertContains(tables_response, "Stollar hisoboti")
 
@@ -697,6 +703,8 @@ class NewEndpointTests(TestCase):
 
     def test_cashier_daily_stock(self):
         auth = self._login("kassir2", "Kas123!")
+        # Portsiya kiritish ochiq smenani talab qiladi.
+        Shift.objects.create(opened_by=self.cashier_user)
         # Set stock
         r = self.client.post(
             reverse("orders:v1_daily_stock"),
@@ -713,6 +721,8 @@ class NewEndpointTests(TestCase):
 
     def test_cashier_daily_stock_update_preserves_consumed_quantity(self):
         auth = self._login("kassir2", "Kas123!")
+        # Portsiya kiritish ochiq smenani talab qiladi.
+        Shift.objects.create(opened_by=self.cashier_user)
         self.client.post(
             reverse("orders:v1_daily_stock"),
             data=json.dumps({"stocks": [{"product_id": self.product.id, "initial_quantity": 10}]}),
@@ -737,6 +747,8 @@ class NewEndpointTests(TestCase):
 
     def test_cashier_accept_order(self):
         auth = self._login("kassir2", "Kas123!")
+        # Buyurtma qabul qilish ochiq smenani talab qiladi.
+        Shift.objects.create(opened_by=self.cashier_user)
         order = Order.objects.create(external_id="CASH-TEST-1", waiter=self.waiter, table=self.table, status=Order.Status.NEW)
         OrderItem.objects.create(order=order, product=self.product, quantity=1)
         r = self.client.post(reverse("orders:v1_cashier_accept", args=[order.pk]), content_type="application/json", **auth)
