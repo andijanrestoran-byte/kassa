@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from rest_framework import generics, permissions, status
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -102,9 +103,34 @@ class LoginView(APIView):
 
 
 class MeView(APIView):
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+
     def get(self, request):
         profile = ensure_profile(request.user)
-        return Response(UserProfileSerializer(profile).data)
+        return Response(UserProfileSerializer(profile, context={"request": request}).data)
+
+    def patch(self, request):
+        """Profilni yangilash. Hozircha faqat profil rasmi (avatar) qo'llab-quvvatlanadi."""
+        profile = ensure_profile(request.user)
+        avatar = request.FILES.get("avatar")
+        if avatar is None:
+            return Response(
+                {"detail": "Rasm yuborilmadi (avatar maydoni bo'sh)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if avatar.content_type and not avatar.content_type.startswith("image/"):
+            return Response(
+                {"detail": "Faqat rasm fayli yuklash mumkin."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if avatar.size and avatar.size > 5 * 1024 * 1024:
+            return Response(
+                {"detail": "Rasm hajmi 5 MB dan oshmasligi kerak."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        profile.avatar = avatar
+        profile.save(update_fields=["avatar"])
+        return Response(UserProfileSerializer(profile, context={"request": request}).data)
 
 
 class TablesListView(APIView):

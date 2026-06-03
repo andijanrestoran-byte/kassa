@@ -55,6 +55,14 @@ class UserProfileSerializer(serializers.Serializer):
     phone = serializers.CharField()
     shift = serializers.CharField()
     experience = serializers.CharField()
+    avatar_url = serializers.SerializerMethodField()
+
+    def get_avatar_url(self, obj):
+        if not obj.avatar:
+            return None
+        url = obj.avatar.url
+        request = self.context.get("request")
+        return request.build_absolute_uri(url) if request else url
 
 
 class TableWaiterSerializer(serializers.Serializer):

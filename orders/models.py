@@ -18,6 +18,12 @@ class UserProfile(models.Model):
     phone = models.CharField(max_length=30, blank=True)
     shift = models.CharField(max_length=60, blank=True)
     experience = models.CharField(max_length=60, blank=True)
+    avatar = models.ImageField(
+        upload_to="avatars/",
+        blank=True,
+        null=True,
+        help_text="Profil rasmi (ofitsant/direktor o'zi yuklaydi).",
+    )
 
     class Meta:
         verbose_name = "Foydalanuvchi profili"
