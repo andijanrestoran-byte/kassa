@@ -317,6 +317,34 @@ class OrderFlowTests(TestCase):
         self.assertEqual(reject_response.status_code, 200)
         self.assertEqual(reject_response.json()["status"], "cancelled")
 
+    def test_director_tables_include_assigned_waiters_with_avatar(self):
+        """Direktor /v1/tables?include_waiters=true orqali har stoldagi
+        ofitsantlarni (avatar_url maydoni bilan) ko'radi."""
+        table = DiningTable.objects.create(number=222)
+        table.assigned_waiters.add(self.waiter_user)
+
+        login = self.client.post(
+            reverse("orders:v1_login"),
+            data=json.dumps({"username": "director_test", "password": "Director123!"}),
+            content_type="application/json",
+        )
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {login.json()['access']}"}
+
+        # include_waiters yo'q -> ofitsantlar bo'sh
+        plain = self.client.get(reverse("orders:v1_tables"), **auth)
+        row_plain = next(r for r in plain.json() if r["number"] == 222)
+        self.assertEqual(row_plain["assigned_waiters"], [])
+
+        # include_waiters=true -> ofitsant avatar_url maydoni bilan keladi
+        resp = self.client.get(reverse("orders:v1_tables") + "?include_waiters=true", **auth)
+        row = next(r for r in resp.json() if r["number"] == 222)
+        self.assertEqual(len(row["assigned_waiters"]), 1)
+        waiter_payload = row["assigned_waiters"][0]
+        self.assertEqual(waiter_payload["full_name"], self.waiter_profile.full_name)
+        self.assertIn("avatar_url", waiter_payload)
+        # Rasm yuklanmagani uchun None (lekin maydon mavjud)
+        self.assertIsNone(waiter_payload["avatar_url"])
+
     def test_waiter_new_order_auto_accepts_on_open_table_bill(self):
         table = DiningTable.objects.create(number=14)
         category = MenuCategory.objects.create(name="Desert", sort_order=3)

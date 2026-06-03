@@ -184,7 +184,7 @@ class TablesListView(APIView):
             table_status = table.current_status
             if status_filter and table_status != status_filter:
                 continue
-            results.append(TableListSerializer(table, context={"include_waiters": include_waiters}).data)
+            results.append(TableListSerializer(table, context={"include_waiters": include_waiters, "request": request}).data)
         return Response(results)
 
 
@@ -203,7 +203,7 @@ class StaffTablesView(APIView):
             table_status = table.current_status
             if status_filter and table_status != status_filter:
                 continue
-            results.append(TableListSerializer(table, context={"include_waiters": include_waiters}).data)
+            results.append(TableListSerializer(table, context={"include_waiters": include_waiters, "request": request}).data)
         return Response(results)
 
     def post(self, request):

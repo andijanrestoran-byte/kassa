@@ -24,6 +24,15 @@ def get_user_profile(user):
     return getattr(user, "profile", None)
 
 
+def build_avatar_url(profile, request=None):
+    """Profil rasmining URL'i (DB'dan xizmat qilinadi). Rasm yo'q bo'lsa None."""
+    if not profile or not getattr(profile, "avatar_data", None):
+        return None
+    version = int(profile.avatar_updated_at.timestamp()) if profile.avatar_updated_at else 0
+    url = f"/api/v1/users/{profile.user_id}/avatar?v={version}"
+    return request.build_absolute_uri(url) if request else url
+
+
 def waiter_user_payload(waiter: Waiter):
     if waiter is None:
         return {"id": None, "username": "mijoz", "full_name": "Mijoz"}
@@ -58,13 +67,8 @@ class UserProfileSerializer(serializers.Serializer):
     avatar_url = serializers.SerializerMethodField()
 
     def get_avatar_url(self, obj):
-        if not obj.avatar_data:
-            return None
         # Cache-buster (?v=...) — rasm yangilanganda mijoz keshini yangilaydi.
-        version = int(obj.avatar_updated_at.timestamp()) if obj.avatar_updated_at else 0
-        url = f"/api/v1/users/{obj.user_id}/avatar?v={version}"
-        request = self.context.get("request")
-        return request.build_absolute_uri(url) if request else url
+        return build_avatar_url(obj, self.context.get("request"))
 
 
 class TableWaiterSerializer(serializers.Serializer):
@@ -92,6 +96,7 @@ class TableListSerializer(serializers.ModelSerializer):
         include_waiters = self.context.get("include_waiters", False)
         if not include_waiters:
             return []
+        request = self.context.get("request")
         payload = []
         for user in obj.assigned_waiters.all():
             profile = get_user_profile(user)
@@ -100,6 +105,7 @@ class TableListSerializer(serializers.ModelSerializer):
                     "id": user.id,
                     "username": user.username,
                     "full_name": profile.full_name if profile else user.username,
+                    "avatar_url": build_avatar_url(profile, request),
                 }
             )
         return payload

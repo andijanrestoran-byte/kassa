@@ -484,7 +484,7 @@ class WaiterAllTablesView(APIView):
     def get(self, request):
         tables = DiningTable.objects.prefetch_related("assigned_waiters__profile").all()
         return Response([
-            TableListSerializer(t, context={"include_waiters": True}).data for t in tables
+            TableListSerializer(t, context={"include_waiters": True, "request": request}).data for t in tables
         ])
 
 
