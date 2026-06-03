@@ -789,6 +789,44 @@ class NewEndpointTests(TestCase):
         self.assertEqual(order.order_source, Order.OrderSource.CLIENT)
         self.assertIsNone(order.waiter)
 
+    def test_each_client_scan_gets_separate_bill(self):
+        """Bitta stolda har bir mijoz (qurilma) alohida shot (hisob) oladi —
+        buyurtmalar bir-biriga qo'shilib ketmaydi."""
+        self.table.refresh_from_db()
+
+        def order_as(name):
+            return self.client.post(
+                reverse("orders:v1_public_order", args=[self.table.qr_token]),
+                data=json.dumps({
+                    "client_name": name,
+                    "items": [{"menu_item_id": self.product.id, "quantity": 1}],
+                }),
+                content_type="application/json",
+            )
+
+        r1 = order_as("Aziz")
+        r2 = order_as("Bobur")
+        self.assertEqual(r1.status_code, 201)
+        self.assertEqual(r2.status_code, 201)
+
+        o1 = Order.objects.get(pk=r1.json()["id"])
+        o2 = Order.objects.get(pk=r2.json()["id"])
+        # Turli shot raqamlari — alohida hisoblar.
+        self.assertNotEqual(o1.bill_number, o2.bill_number)
+
+        # Kassada ham alohida shot bo'lib ko'rinadi.
+        from .services import table_summary
+        shots = table_summary(self.table)["shots"]
+        client_shots = {
+            o.client_name: shot["bill_number"]
+            for shot in shots
+            for o in shot["orders"]
+            if o.order_source == Order.OrderSource.CLIENT
+        }
+        self.assertEqual(client_shots.get("Aziz"), o1.bill_number)
+        self.assertEqual(client_shots.get("Bobur"), o2.bill_number)
+        self.assertNotEqual(client_shots["Aziz"], client_shots["Bobur"])
+
     def test_public_order_status_requires_token(self):
         self.table.refresh_from_db()
         create_response = self.client.post(

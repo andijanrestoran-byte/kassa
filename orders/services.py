@@ -10,6 +10,23 @@ ACTIVE_ORDER_STATUSES = (
 )
 
 
+def next_client_bill_number(table) -> int:
+    """Mijoz QR orqali buyurtma berganda — keyingi bo'sh shot (hisob) raqami.
+
+    Har bir mijoz (qurilma) alohida hisob bo'lib ko'rinishi uchun, stoldagi
+    faol buyurtmalar band qilmagan eng kichik 1-10 raqam tanlanadi. Barchasi
+    band bo'lsa (kamdan-kam), 10 dan oshib ketadi.
+    """
+    used = set(
+        Order.objects.filter(table=table, status__in=ACTIVE_ORDER_STATUSES)
+        .values_list("bill_number", flat=True)
+    )
+    for number in range(1, 11):
+        if number not in used:
+            return number
+    return max(used) + 1 if used else 1
+
+
 def order_total(order: Order) -> Decimal:
     return sum((item.line_total for item in order.items.all()), Decimal("0"))
 

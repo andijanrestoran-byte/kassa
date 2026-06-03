@@ -32,7 +32,7 @@ from .models import (
     DiningTable, MenuCategory, Order, OrderItem, Payment,
     Product, ProductDailyStock, Shift, UserProfile, Waiter,
 )
-from .services import ACTIVE_ORDER_STATUSES, order_payable_total, table_summary
+from .services import ACTIVE_ORDER_STATUSES, next_client_bill_number, order_payable_total, table_summary
 
 User = get_user_model()
 
@@ -433,10 +433,13 @@ class PublicClientOrderView(APIView):
         today = timezone.localdate()
 
         with transaction.atomic():
+            # Stol qatorini qulflaymiz — bir vaqtda skaner qilgan ikki mijoz
+            # bir xil shot raqamini olmasligi (hisoblari qo'shilmasligi) uchun.
+            locked_table = DiningTable.objects.select_for_update().get(pk=table.pk)
             external_id = f"CLIENT-{table.number}-{get_random_string(16)}"
             order = Order.objects.create(
                 external_id=external_id, waiter=None, table=table,
-                bill_number=d.get("bill_number", 1),
+                bill_number=next_client_bill_number(locked_table),
                 note=d.get("note", ""), status=Order.Status.ACCEPTED,
                 order_source=Order.OrderSource.CLIENT, client_name=d["client_name"],
             )

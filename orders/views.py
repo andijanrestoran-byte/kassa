@@ -27,7 +27,7 @@ from .models import (
     UserProfile,
     Waiter,
 )
-from .services import ACTIVE_ORDER_STATUSES, table_summary
+from .services import ACTIVE_ORDER_STATUSES, next_client_bill_number, table_summary
 
 
 def _base_context():
@@ -702,11 +702,15 @@ def client_order_create(request: HttpRequest, qr_token: str):
     today = timezone.localdate()
     try:
         with transaction.atomic():
+            # Stol qatorini qulflaymiz — bir vaqtda skaner qilgan ikki mijoz
+            # bir xil shot raqamini olmasligi (hisoblari qo'shilib ketmasligi) uchun.
+            locked_table = DiningTable.objects.select_for_update().get(pk=table.pk)
+            bill_number = next_client_bill_number(locked_table)
             order = Order.objects.create(
                 external_id=f"CLIENT-{table.number}-{get_random_string(16)}",
                 waiter=None,
                 table=table,
-                bill_number=1,
+                bill_number=bill_number,
                 note=note,
                 status=Order.Status.ACCEPTED,
                 order_source=Order.OrderSource.CLIENT,
