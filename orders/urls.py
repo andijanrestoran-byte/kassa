@@ -53,6 +53,7 @@ urlpatterns = [
     path("api/v1/auth/login", api_views.LoginView.as_view(), name="v1_login"),
     path("api/v1/auth/refresh", TokenRefreshView.as_view(), name="v1_refresh"),
     path("api/v1/auth/me", api_views.MeView.as_view(), name="v1_me"),
+    path("api/v1/users/<int:user_id>/avatar", api_views.AvatarServeView.as_view(), name="v1_user_avatar"),
 
     # ── API v1 — Stollar ──
     path("api/v1/tables", api_views.TablesListView.as_view(), name="v1_tables"),

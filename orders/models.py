@@ -18,12 +18,16 @@ class UserProfile(models.Model):
     phone = models.CharField(max_length=30, blank=True)
     shift = models.CharField(max_length=60, blank=True)
     experience = models.CharField(max_length=60, blank=True)
-    avatar = models.ImageField(
-        upload_to="avatars/",
-        blank=True,
-        null=True,
-        help_text="Profil rasmi (ofitsant/direktor o'zi yuklaydi).",
-    )
+    # Profil rasmi DB'da saqlanadi (Railway fayl tizimi vaqtinchalik bo'lgani
+    # uchun diskdagi ImageField har deploy'da o'chib ketardi). Rasm baytlari
+    # bevosita bazada saqlanadi va alohida view orqali xizmat qilinadi.
+    avatar_data = models.BinaryField(null=True, blank=True, editable=True)
+    avatar_content_type = models.CharField(max_length=50, blank=True, default="")
+    avatar_updated_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def has_avatar(self) -> bool:
+        return bool(self.avatar_data)
 
     class Meta:
         verbose_name = "Foydalanuvchi profili"

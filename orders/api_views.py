@@ -1,10 +1,13 @@
+import io
+
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Prefetch, Q
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from PIL import Image
 from django.utils.crypto import get_random_string
 from rest_framework import generics, permissions, status
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -110,7 +113,11 @@ class MeView(APIView):
         return Response(UserProfileSerializer(profile, context={"request": request}).data)
 
     def patch(self, request):
-        """Profilni yangilash. Hozircha faqat profil rasmi (avatar) qo'llab-quvvatlanadi."""
+        """Profilni yangilash. Hozircha faqat profil rasmi (avatar) qo'llab-quvvatlanadi.
+
+        Rasm Pillow bilan kichraytirilib (max 512px), JPEG'ga aylantirilib
+        bevosita bazada (BinaryField) saqlanadi — Railway redeploy'da yo'qolmaydi.
+        """
         profile = ensure_profile(request.user)
         avatar = request.FILES.get("avatar")
         if avatar is None:
@@ -128,9 +135,45 @@ class MeView(APIView):
                 {"detail": "Rasm hajmi 5 MB dan oshmasligi kerak."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        profile.avatar = avatar
-        profile.save(update_fields=["avatar"])
+
+        try:
+            image = Image.open(avatar)
+            image = image.convert("RGB")
+            image.thumbnail((512, 512))
+            buffer = io.BytesIO()
+            image.save(buffer, format="JPEG", quality=85, optimize=True)
+            data = buffer.getvalue()
+        except Exception:
+            return Response(
+                {"detail": "Rasmni o'qib bo'lmadi. Boshqa rasm tanlang."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        profile.avatar_data = data
+        profile.avatar_content_type = "image/jpeg"
+        profile.avatar_updated_at = timezone.now()
+        profile.save(
+            update_fields=["avatar_data", "avatar_content_type", "avatar_updated_at"]
+        )
         return Response(UserProfileSerializer(profile, context={"request": request}).data)
+
+
+class AvatarServeView(APIView):
+    """Profil rasmini DB'dan o'qib qaytaradi. Avatar maxfiy emas, shuning uchun
+    autentifikatsiyasiz ham ochiladi (Image.network token yubormaydi)."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, user_id):
+        profile = get_object_or_404(UserProfile, user_id=user_id)
+        if not profile.avatar_data:
+            raise Http404("Avatar topilmadi.")
+        response = HttpResponse(
+            bytes(profile.avatar_data),
+            content_type=profile.avatar_content_type or "image/jpeg",
+        )
+        response["Cache-Control"] = "public, max-age=300"
+        return response
 
 
 class TablesListView(APIView):

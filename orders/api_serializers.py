@@ -58,9 +58,11 @@ class UserProfileSerializer(serializers.Serializer):
     avatar_url = serializers.SerializerMethodField()
 
     def get_avatar_url(self, obj):
-        if not obj.avatar:
+        if not obj.avatar_data:
             return None
-        url = obj.avatar.url
+        # Cache-buster (?v=...) — rasm yangilanganda mijoz keshini yangilaydi.
+        version = int(obj.avatar_updated_at.timestamp()) if obj.avatar_updated_at else 0
+        url = f"/api/v1/users/{obj.user_id}/avatar?v={version}"
         request = self.context.get("request")
         return request.build_absolute_uri(url) if request else url
 
