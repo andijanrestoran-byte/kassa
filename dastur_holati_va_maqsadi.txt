@@ -1,15 +1,19 @@
 DASTURXON LOYIHASI — HOLAT VA MAQSAD
-Oxirgi yangilangan: 2026-05-16
+Oxirgi yangilangan: 2026-06-03
 
 ====================================================================
 0. REPOLAR VA JOYLASHUV
 ====================================================================
 - Backend (kassa)   : C:\Users\xasan\PycharmProjects\andijan
                        GitHub: andijanrestoran-byte/kassa  (branch: main)
-                       Django 6 + DRF, SQLite (db.sqlite3). Serverga main'dan deploy.
+                       Django 6.0.5 + DRF, SQLite (db.sqlite3, lokal).
+                       Prod: Railway (Postgres), main'dan avtomatik deploy.
+                       URL: https://kassa-production.up.railway.app
 - Mobil (restoran)  : C:\Users\xasan\AndroidStudioProjects\andijan
                        GitHub: andijanrestoran-byte/restoran (branch: main)
-                       Flutter ilova (ofitsant/direktor).
+                       Flutter ilova (ofitsant/direktor). Kassir mobil'ga
+                       kira olmaydi — kassir veb-panelda ishlaydi.
+                       Ilova prod backendga ulanadi (app.dart: backendApiBaseUrl).
 - Web panel dizayni : dark zamonaviy SaaS tema (Manrope, neon-lime accent),
                        sidebar ikonali, guruhlangan navigatsiya.
 
@@ -17,7 +21,8 @@ Oxirgi yangilangan: 2026-05-16
 1. LOYIHA MAQSADI
 ====================================================================
 Restoran operatsiyalarini avtomatlashtirish:
-- Direktor : to'liq nazorat, xodimlar, moliyaviy hisobotlar.
+- Direktor : to'liq nazorat, xodimlar, moliyaviy hisobotlar, stollarda
+             kim xizmat qilayotganini ko'rish.
 - Kassir   : smena, menyu, kunlik portsiya, buyurtma qabul, to'lov/hisob yopish.
 - Ofitsant : stolga birikish, buyurtma olish (mobil ilova).
 - Mijoz    : QR orqali menyu ko'rish va o'z-o'ziga xizmat (web sahifa).
@@ -33,6 +38,13 @@ Restoran operatsiyalarini avtomatlashtirish:
   ofitsant batafsil (qaysi taomlar).
 - Naqd/Karta savdolari: Payment yozuvlaridan avtomatik agregatlanadi
   (RevenueReport + dashboard summary). Hisob yopilganda tushadi.
+- HAQIQIY MA'LUMOTLAR: mobil dashboard prod backenddan real ma'lumot
+  oladi (demo emas) — stollar holati, faol buyurtmalar, naqd/karta,
+  ofitsantlar ro'yxati. (Login muvaffaqiyatsiz/server o'chiq bo'lsagina
+  offline demo rejimga tushadi.)
+- STOLDA OFITSANTLAR (YANGI): mobil dashboard'da har band stolda xizmat
+  ko'rsatayotgan ofitsant(lar) AVATAR rasmi + ismi bilan ko'rinadi
+  (/v1/tables?include_waiters=true, assigned_waiters[].avatar_url).
 - Web panelga ham kira oladi (kassir bilan bir xil sahifalar).
 
 AVTOMATIK QABUL: Ofitsant VA mijoz (QR) buyurtmalari avtomatik
@@ -41,65 +53,67 @@ kassirga ko'rinadi va parallel ravishda oshxona cheki avtomatik
 chiqadi (Oshxona konsoli orqali).
 
 2.2. KASSIR (Web panel — asosiy ish joyi)
-- OSHXONA: /oshxona/  — bu sahifa oshxona printeriga ulangan
-  kompyuterda OCHIQ qoldiriladi. Har 8s yangi buyurtmalarni tekshiradi,
-  yangi (qabul qilingan) buyurtma chekini avtomatik chop etadi
-  (Order.kitchen_printed bilan takror chop oldi olinadi, atomik claim).
-- SMENA: /smena/  — "Smenani boshlash" tugmasi. Smena ochilmaguncha:
-    * buyurtma QABUL QILIB BO'LMAYDI (web accept + API cashier accept bloklangan)
-    * kunlik PORTSIYA kiritib bo'lmaydi
-  Smena ochilgach: kategoriya tablari bo'yicha portsiya jadvali.
-  Iste'mol qilingan portsiya saqlanadi (qolgan = yangi_boshlang'ich - iste'mol).
-- MENYU: /menu/  — to'liq CRUD (nom, kategoriya, narx, tavsif, faol/nofaol,
-  "Rad etish mumkin" katagi). Kategoriya qo'shish. Kategoriya tablari bo'yicha.
-  "Rad etilmaydi" deb belgilangan taom ro'yxatda pill bilan ko'rinadi.
-- BUYURTMALAR: /orders/  — faqat faol; karta ko'rinishi (Stol #N, summa,
-  ofitsant, mahsulot soni). Smena yopiq bo'lsa ogohlantirish banneri.
-- BUYURTMA TAFSILOTI: /orders/<id>/  — itemni rad etish. Lekin
-  is_rejectable=False taom rad ETIB BO'LMAYDI (bloklanadi, banner).
+- OSHXONA: /oshxona/  — oshxona printeriga ulangan kompyuterda ochiq
+  qoldiriladi. Har 8s yangi buyurtma chekini avtomatik chop etadi
+  (Order.kitchen_printed bilan atomik claim, takror oldini oladi).
+- SMENA: /smena/  — "Smenani boshlash". Smena ochilmaguncha buyurtma
+  QABUL QILIB BO'LMAYDI va kunlik PORTSIYA kiritib bo'lmaydi.
+  Ochilgach: kategoriya tablari bo'yicha portsiya jadvali. Iste'mol
+  saqlanadi (qolgan = yangi_boshlang'ich − iste'mol).
+- MENYU: /menu/  — to'liq CRUD (nom, kategoriya, narx, tavsif, faol,
+  "Rad etish mumkin"). Kategoriya tablari bo'yicha.
+- BUYURTMALAR: /orders/  — faqat faol; karta ko'rinishi.
+- BUYURTMA TAFSILOTI: /orders/<id>/  — itemni rad etish (is_rejectable
+  hurmat qilinadi).
 - STOLLAR: /tables/  — har stol, faol hisoblar. 20s da yangilanadi.
 - STOL HISOBI: /tables/<id>/  — shot bo'yicha. "Hisobni yopish" /
-  "Hammasini yopish" bosilganda TO'LOV MODALI chiqadi (Naqd / Karta).
-    * tanlangach har order uchun Payment yaratiladi (amount=payable, cashier)
-    * order COMPLETED bo'ladi, chek avtomatik chiqadi
-    * chekda "To'lov turi: Naqd/Karta" qatori bor
-- STOLLAR QR: /stollar-qr/  — barcha stollar QR rasmi (data-URI),
-  "Hammasini chop etish" (toza print) + alohida yuklab olish.
+  "Hammasini yopish" -> TO'LOV MODALI (Naqd/Karta) -> Payment + chek.
+- STOLLAR QR: /stollar-qr/  — barcha stollar QR rasmi, chop/yuklab olish.
   QR -> mijoz sahifasi /m/<token>/.
 - XODIMLAR: /waiters/  — ofitsant ro'yxati/qo'shish/o'chirish.
-- BOSHQARUV: /  — bo'limlarga kirish dashboard.
+- BOSHQARUV: /  — dashboard.
 
 2.3. OFITSANT (Flutter mobil ilova)
 - Stolga birikish, buyurtma olish (stol + shot raqami).
-- Ofitsant zakazi avtomatik "Accepted" (kassir tasdiqlashi shart emas).
-- Menyuda har taomda:
-    * "Bugun: N porsiya" (remaining_today) — tugaganda kulrang + "Tugadi",
-      + tugma bloklanadi, limitga yetganda ham bloklanadi.
-    * "Rad etilmaydi" badge (is_rejectable=False bo'lsa).
+- Ofitsant zakazi avtomatik "Accepted".
+- MENYU QIDIRUVI (YANGI): buyurtma menyusida "Taom qidirish" maydoni —
+  taom nomi bo'yicha barcha kategoriyalar bo'ylab filtrlaydi (client-side),
+  tozalash tugmasi, qidiruv paytida kategoriya chiplari yashiriladi.
+- PROFIL RASMI (YANGI): profil bo'limida kamera tugmasi -> galereyadan
+  rasm tanlab yuklaydi. Rasm bazada saqlanadi (redeploy'da yo'qolmaydi).
+- Har taomda: "Bugun: N porsiya" (tugaganda bloklanadi), "Rad etilmaydi"
+  badge (is_rejectable=False).
 - Ko'p guruhli xizmat: bitta stolga 10 tagacha shot.
 
 2.4. MIJOZ (Web — QR self-service, autentifikatsiyasiz)
 - /m/<qr_token>/            : mobil menyu (kategoriya tablari, narx,
-  portsiya, "Rad etilmaydi" belgisi), savat (+/-), buyurtma berish
-  (ism + izoh). Tugagan taom ko'rsatiladi lekin tanlanmaydi.
-- /m/<qr_token>/order/      : buyurtma yaratish (CLIENT manba,
-  sig'im tekshiriladi va kamaytiriladi).
-- /m/order/<id>/?t=<token>  : holat kuzatuvi (15s auto-refresh),
-  har item holati (Kutilmoqda/Qabul/Rad), jami.
+  portsiya, "Rad etilmaydi"), savat (+/-), buyurtma berish (ism + izoh).
+- /m/<qr_token>/order/      : buyurtma yaratish (CLIENT manba, sig'im
+  tekshiriladi va kamaytiriladi).
+- HAR MIJOZ ALOHIDA HISOB (YANGI): bitta stolda har bir mijoz (qurilma)
+  skaner qilib buyurtma berса, ALOHIDA shot (hisob) raqamini oladi —
+  buyurtmalar bir-biriga qo'shilib ketmaydi. Keyingi bo'sh shot (1-10)
+  tanlanadi, stol qatori select_for_update bilan qulflanadi (poyga yo'q).
+  Kassada har mijoz alohida hisob bo'lib ko'rinadi.
+- /m/order/<id>/?t=<token>  : holat kuzatuvi (15s auto-refresh).
 - /m/order/<id>/items/<id>/reject/ : mijoz rad etiluvchi taomni rad etadi
-  (is_rejectable hurmat qilinadi, sig'im qaytadi, hammasi rad bo'lsa cancel).
-- Backend public API ham bor (api/v1/public/...), web sahifa shu mantiqni
-  model darajasida ko'zgu qiladi.
+  (sig'im qaytadi, hammasi rad bo'lsa cancel).
+- Backend public API ham bor (api/v1/public/...).
 
 ====================================================================
 3. MUHIM MODELLAR
 ====================================================================
+- UserProfile : role, full_name, phone, shift, experience.
+                YANGI: avatar_data (BinaryField — rasm baytlari bazada),
+                avatar_content_type, avatar_updated_at, has_avatar.
+                (Eski disk-asosli ImageField olib tashlandi — Railway fayl
+                tizimi efemer, redeploy'da rasm yo'qolardi.)
 - DiningTable : qr_token (avto), assigned_waiters, current_status.
 - Order       : external_id, bill_number(1-10), status, order_source
                 (waiter/client), client_name, public_token,
-                total_amount/payable_amount.
+                total_amount/payable_amount, kitchen_printed.
 - OrderItem   : product, quantity, status (pending/accepted/rejected),
-                rejection_reason, line_total.
+                rejection_reason, note, line_total.
 - Product     : price, is_active, is_rejectable, image, get_today_remaining().
 - MenuCategory: name, sort_order.
 - ProductDailyStock : (product,date) unique, initial/remaining_quantity.
@@ -109,36 +123,61 @@ chiqadi (Oshxona konsoli orqali).
 ====================================================================
 4. TEXNIK HOLAT
 ====================================================================
-- Auth: Web=Session, API=JWT. Legacy ApiToken yo'q.
-- `python manage.py check` toza. Migratsiyalar: oxirgisi 0014_shift.
-- Har o'zgarishdan keyin test-client smoke testlari bilan tekshirilgan.
-- Flutter: `flutter analyze` toza (withValues konventsiyasi).
+- Auth: Web=Session, API=JWT. Access token 5 daqiqa yashaydi; Flutter
+  ilova refresh token bilan AVTOMATIK yangilaydi (401 -> refresh -> qayta
+  urinish), shuning uchun ofitsant 5 daqiqadan keyin ham buyurtma yubora oladi.
+- Profil rasmi (avatar):
+    * Yuklash: PATCH /api/v1/auth/me (multipart "avatar"). Pillow bilan
+      512px ga kichraytirilib JPEG'ga aylantirilib bazaga (avatar_data)
+      yoziladi (<=5 MB, faqat rasm).
+    * Ko'rsatish: GET /api/v1/users/<id>/avatar (autentifikatsiyasiz —
+      Image.network token yubormaydi; Cache-Control 300s; ?v=... cache-buster).
+    * UserProfileSerializer.avatar_url + assigned_waiters[].avatar_url
+      (build_avatar_url helper, to'liq URL uchun serializer'ga request context).
+- Media (mahsulot rasmi): /media/ DEBUG=False bo'lganda ham xizmat qilinadi
+  (config/urls.py'da re_path serve). Eslatma: disk efemer.
+- Migratsiyalar: oxirgisi 0017_remove_userprofile_avatar_and_more
+  (0016 avatar ImageField qo'shgan -> 0017 uni o'chirib avatar_data/
+  content_type/updated_at BinaryField maydonlarni qo'shgan). Chiziqli,
+  prod tarixiga mos (yetim ustun yo'q).
+- `python manage.py check` toza. Testlar: 34 ta, hammasi o'tadi
+  (orders/tests.py — auth, buyurtma sikli, to'lov, QR self-service, sig'im,
+  har mijoz alohida shot, direktor stolда ofitsant avatar_url bilan).
+- Flutter: `flutter analyze` toza. Paketlar: image_picker, http qo'shildi.
+  Release APK: build\app\outputs\flutter-apk\app-release.apk (~49 MB).
 
 ====================================================================
-5. SHU SESSIYADAGI ASOSIY ISHLAR (2026-05-16)
+5. SHU SESSIYADAGI ASOSIY ISHLAR (2026-06-03)
 ====================================================================
-- Web panel to'liq dark zamonaviy redesign (base.html dizayn tizimi).
-- Buyurtmalarda xunuk external_id (API-..) olib tashlandi -> "Stol #N".
-- Kassir: menyu CRUD web + kunlik portsiya jadvali (kategoriya tablari).
-- Smena tizimi (Shift modeli) + gating: smena boshlanmaguncha qabul/portsiya yo'q.
-- Hisob yopishda Naqd/Karta modali + Payment yaratish + chekda to'lov turi.
-- is_rejectable: web reject_item bloklash + ofitsant/mijoz UI'da ko'rsatish.
-- Mijoz QR self-service web sahifasi (menyu/buyurtma/holat/reject).
-- "Stollar QR" sahifasi (chop etish/yuklab olish), QR -> /m/<token>/.
-- Mijoz buyurtmasi ham avtomatik ACCEPTED (kassir qabul qilmaydi).
-- Oshxona avtomatik chek konsoli /oshxona/ (Order.kitchen_printed,
-  0015 migratsiya, atomik claim, embed=1 kitchen-print).
+- (Tuzatish) Ofitsant buyurtma yuborishda xato: ilova eski build'da
+  "order_items" yuborar edi, server "items" kutadi -> 400. Manba allaqachon
+  "items" yuboradi; APK qayta qurilib hal qilindi.
+- (Yangi) Ofitsant mobil: menyu qidiruvi (client-side, taom nomi bo'yicha).
+- (Yangi) Profil rasmi yuklash (ofitsant/direktor): avval disk ImageField,
+  so'ng Railway efemer fayl muammosi sababli BAZADA (BinaryField) saqlashga
+  o'tkazildi. Pillow 512px JPEG, AvatarServeView orqali xizmat.
+- (Tuzatish) Mijoz QR: har bir mijoz skaneri alohida hisob (shot) oladi
+  (avval hammasi bill_number=1 ga qo'shilib ketardi). next_client_bill_number
+  + select_for_update. Prod'da tasdiqlandi (2 mijoz -> 2 alohida shot).
+- (Yangi) Direktor mobil dashboard'da har band stolda xizmat ko'rsatayotgan
+  ofitsant avatar rasmi + ismi bilan ko'rinadi (assigned_waiters avatar_url,
+  fetchTables direktor uchun include_waiters=true).
+- (Tasdiq) Direktorga haqiqiy prod ma'lumotlari kelishi tekshirildi
+  (dashboard, ofitsantlar, stollar — demo emas).
+- (Infratuzilma) Flutter HTTP: Content-Length (chunked bug), access token
+  avtomatik refresh.
 
 ====================================================================
-6. ERTAGA DAVOM ETTIRISH UCHUN ESLATMALAR / KEYINGI ISHLAR
+6. KEYINGI ISHLAR / ESLATMALAR
 ====================================================================
-- (Tekshirish) Mijoz buyurtmasi NEW bo'lib tushadi; kassir smena ochib
-  qabul qilishi kerak — real qurilmada oqimni sinab ko'rish.
-- (G'oya) Mijoz sahifasiga "savatni tozalash" / miqdorni ko'rsatish.
-- (G'oya) Direktorga naqd/karta savdolarini web panelda alohida sahifa
-  (hozir faqat API/dashboard'da).
-- (Eslatma) Smena yopish (kun oxirida) funksiyasi yo'q — kerak bo'lsa
-  Shift'ga closed_at qo'shib, kun bo'yi bitta smena ishlaydi.
-- (Xavfsizlik) git remote URL'da GitHub PAT ochiq turibdi — token
-  yangilab, credential manager/SSH ga o'tkazish tavsiya etiladi.
+- (Eslatma) Railway disk efemer: mahsulot rasmlari (/media/products/)
+  redeploy'da yo'qolishi mumkin. Avatar bazada (xavfsiz). Doimiy media
+  kerak bo'lsa S3/Cloudinary ulash kerak.
+- (Eslatma) Smena yopish funksiyasi yo'q (faqat ochish) — kun bo'yi bitta
+  smena. Kerak bo'lsa Shift'ga closed_at qo'shiladi.
+- (Xavfsizlik) git remote URL'da GitHub PAT bo'lishi mumkin — SSH/credential
+  manager'ga o'tkazish tavsiya etiladi.
+- (Test) Yangi APK'ni telefonga o'rnatib (eski ilovani o'chirib), real
+  qurilmada sinash: qidiruv, profil rasmi, ikki qurilmadan alohida hisob,
+  direktor stolда ofitsant avatari.
 - Print sahifalari (table_print, kitchen_print) ataylab oq fon (printer uchun).
