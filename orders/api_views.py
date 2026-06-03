@@ -125,11 +125,9 @@ class MeView(APIView):
                 {"detail": "Rasm yuborilmadi (avatar maydoni bo'sh)."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        if avatar.content_type and not avatar.content_type.startswith("image/"):
-            return Response(
-                {"detail": "Faqat rasm fayli yuklash mumkin."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # Content-type sarlavhasiga ishonmaymiz (mijozlar har xil yuboradi —
+        # masalan Dart 'http' octet-stream qiladi). Haqiqiy tekshiruv quyida
+        # Pillow Image.open orqali: agar rasm bo'lmasa, 400 qaytadi.
         if avatar.size and avatar.size > 5 * 1024 * 1024:
             return Response(
                 {"detail": "Rasm hajmi 5 MB dan oshmasligi kerak."},
