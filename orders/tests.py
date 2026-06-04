@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from .models import DiningTable, MenuCategory, Order, OrderItem, Payment, Product, ProductDailyStock, Shift, UserProfile, Waiter
 
@@ -56,6 +57,8 @@ class OrderFlowTests(TestCase):
             shift="09:00 - 18:00",
             experience="8 yil",
         )
+        # Buyurtma qabul qilish uchun smena ochiq bo'lishi shart.
+        Shift.objects.create(opened_by=self.user)
 
 
     def test_session_login_form_accepts_trusted_origin(self):
@@ -680,6 +683,8 @@ class NewEndpointTests(TestCase):
         self.category = MenuCategory.objects.create(name="Test Kategoriya", sort_order=1)
         self.product = Product.objects.create(name="Test Taom", price=25000, category=self.category, is_rejectable=True)
         self.product_fixed = Product.objects.create(name="Doimiy Taom", price=10000, category=self.category, is_rejectable=False)
+        # Buyurtma qabul qilish uchun smena ochiq bo'lishi shart.
+        Shift.objects.create(opened_by=self.cashier_user)
 
     def _login(self, username, password):
         r = self.client.post(
@@ -946,4 +951,143 @@ class NewEndpointTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertTrue(any(t["number"] == 50 for t in r.json()))
 
-# Create your tests here.
+
+class ShiftLifecycleTests(TestCase):
+    """Smenani ochish/yopish hayot-sikli va gating mantiqi."""
+
+    def setUp(self):
+        self.client = Client()
+        User = get_user_model()
+        # Kassir (smenani ochadi/yopadi)
+        self.cashier_user = User.objects.create_user(username="kassir_sh", password="Kas123!")
+        UserProfile.objects.create(
+            user=self.cashier_user, full_name="Kassir Smena", role=UserProfile.Role.CASHIER,
+        )
+        # Ofitsant
+        self.waiter_user = User.objects.create_user(username="ofitsant_sh", password="Ofi123!")
+        UserProfile.objects.create(
+            user=self.waiter_user, full_name="Ofitsant Smena", role=UserProfile.Role.WAITER,
+        )
+        self.waiter = Waiter.objects.create(user=self.waiter_user, full_name="Ofitsant Smena")
+        # Ma'lumotlar
+        self.table = DiningTable.objects.create(number=70, seats=4)
+        self.category = MenuCategory.objects.create(name="Smena Kategoriya", sort_order=1)
+        self.product = Product.objects.create(
+            name="Smena Taom", price=20000, category=self.category, is_rejectable=True,
+        )
+
+    # ── Model darajasi ──
+
+    def test_is_open_false_when_no_shift(self):
+        self.assertFalse(Shift.is_open())
+        self.assertIsNone(Shift.current())
+
+    def test_open_then_close_cycle(self):
+        shift = Shift.objects.create(opened_by=self.cashier_user)
+        self.assertTrue(Shift.is_open())
+        self.assertEqual(Shift.current().pk, shift.pk)
+
+        # Yopish
+        shift.closed_by = self.cashier_user
+        shift.closed_at = timezone.now()
+        shift.save(update_fields=["closed_by", "closed_at"])
+
+        self.assertFalse(Shift.is_open())
+        self.assertIsNone(Shift.current())
+
+    def test_reopen_same_day_creates_new_open_shift(self):
+        """Bir kun ichida yopib qayta ochish mumkin (date unique emas)."""
+        first = Shift.objects.create(opened_by=self.cashier_user)
+        first.closed_at = timezone.now()
+        first.save(update_fields=["closed_at"])
+
+        second = Shift.objects.create(opened_by=self.cashier_user)
+        self.assertTrue(Shift.is_open())
+        self.assertEqual(Shift.current().pk, second.pk)
+        self.assertEqual(Shift.objects.filter(date=timezone.localdate()).count(), 2)
+
+    # ── Web view (kassir paneli) ──
+
+    def test_start_shift_view_opens_shift(self):
+        self.client.login(username="kassir_sh", password="Kas123!")
+        self.assertFalse(Shift.is_open())
+        r = self.client.post(reverse("orders:start_shift"))
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(Shift.is_open())
+
+    def test_start_shift_does_not_duplicate_open_shift(self):
+        self.client.login(username="kassir_sh", password="Kas123!")
+        self.client.post(reverse("orders:start_shift"))
+        self.client.post(reverse("orders:start_shift"))
+        self.assertEqual(Shift.objects.filter(closed_at__isnull=True).count(), 1)
+
+    def test_close_shift_view_closes_and_records_user(self):
+        self.client.login(username="kassir_sh", password="Kas123!")
+        self.client.post(reverse("orders:start_shift"))
+        r = self.client.post(reverse("orders:close_shift"))
+        self.assertEqual(r.status_code, 302)
+        self.assertFalse(Shift.is_open())
+        shift = Shift.objects.latest("opened_at")
+        self.assertIsNotNone(shift.closed_at)
+        self.assertEqual(shift.closed_by, self.cashier_user)
+
+    def test_close_shift_requires_manager(self):
+        """Ofitsant smenani yopa olmaydi."""
+        Shift.objects.create(opened_by=self.cashier_user)
+        self.client.login(username="ofitsant_sh", password="Ofi123!")
+        r = self.client.post(reverse("orders:close_shift"))
+        self.assertEqual(r.status_code, 400)
+        self.assertTrue(Shift.is_open())
+
+    # ── API gating ──
+
+    def _waiter_auth(self):
+        r = self.client.post(
+            reverse("orders:v1_login"),
+            data=json.dumps({"username": "ofitsant_sh", "password": "Ofi123!"}),
+            content_type="application/json",
+        )
+        return {"HTTP_AUTHORIZATION": f"Bearer {r.json()['access']}"}
+
+    def _create_waiter_order(self, auth):
+        return self.client.post(
+            reverse("orders:v1_orders"),
+            data=json.dumps({
+                "table_id": self.table.id,
+                "note": "",
+                "items": [{"menu_item_id": self.product.id, "quantity": 1}],
+            }),
+            content_type="application/json",
+            **auth,
+        )
+
+    def test_waiter_order_blocked_when_shift_closed(self):
+        auth = self._waiter_auth()
+        r = self._create_waiter_order(auth)
+        self.assertEqual(r.status_code, 400)
+
+    def test_waiter_order_allowed_when_shift_open(self):
+        Shift.objects.create(opened_by=self.cashier_user)
+        auth = self._waiter_auth()
+        r = self._create_waiter_order(auth)
+        self.assertEqual(r.status_code, 201)
+
+    def _create_client_order(self):
+        self.table.refresh_from_db()
+        return self.client.post(
+            reverse("orders:v1_public_order", args=[self.table.qr_token]),
+            data=json.dumps({
+                "client_name": "Mijoz",
+                "items": [{"menu_item_id": self.product.id, "quantity": 1}],
+            }),
+            content_type="application/json",
+        )
+
+    def test_client_qr_order_blocked_when_shift_closed(self):
+        r = self._create_client_order()
+        self.assertEqual(r.status_code, 400)
+
+    def test_client_qr_order_allowed_when_shift_open(self):
+        Shift.objects.create(opened_by=self.cashier_user)
+        r = self._create_client_order()
+        self.assertEqual(r.status_code, 201)

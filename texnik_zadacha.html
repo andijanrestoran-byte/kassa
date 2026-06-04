@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Texnik topshiriq — «Dasturxon» restoran boshqaruv tizimi</title>
+<style>
+  :root{
+    --ink:#1a222e; --muted:#5c6675; --faint:#8a93a3;
+    --line:#d8dee7; --hair:#e7ecf2; --soft:#f5f7fa;
+    --navy:#122036; --navy2:#1b2f4d;
+    --accent:#2f5fa6; --accent-soft:#eaf0f9;
+    --warn:#9a6212; --warn-soft:#fbf3e3;
+    --ok:#1f7a55; --paper:#ffffff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:#dfe4ea;color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    font-size:14.5px;line-height:1.72;}
+  .page{max-width:900px;margin:30px auto;background:var(--paper);
+    box-shadow:0 14px 46px rgba(15,25,45,.16)}
+  .pad{padding:48px 64px}
+  a{color:var(--accent);text-decoration:none}
+  p{margin:9px 0;text-align:justify}
+  ul,ol{margin:8px 0;padding-left:22px}
+  li{margin:5px 0}
+  code{background:var(--soft);border:1px solid var(--line);border-radius:3px;
+    padding:1px 6px;font-family:Consolas,"Courier New",monospace;font-size:12.5px;color:#243246}
+  .lead{color:var(--muted)}
+
+  /* ---- COVER ---- */
+  .cover{background:var(--navy);color:#eaf0f8;padding:0}
+  .cover-top{height:6px;background:linear-gradient(90deg,var(--accent),#5b8ad1)}
+  .cover-inner{padding:64px 64px 52px}
+  .cls{font-size:11px;letter-spacing:3.5px;text-transform:uppercase;color:#8fa6c6}
+  .cover h1{font-family:Georgia,"Times New Roman",serif;font-size:42px;font-weight:700;
+    margin:34px 0 0;line-height:1.12;letter-spacing:.2px}
+  .cover .sub{font-size:17px;color:#c4d2e6;margin-top:10px;max-width:560px}
+  .rule{height:1px;background:rgba(255,255,255,.16);margin:34px 0}
+  .meta{width:100%;border-collapse:collapse;font-size:13px;color:#cdd9ea}
+  .meta td{padding:6px 0;vertical-align:top;border-bottom:1px solid rgba(255,255,255,.08)}
+  .meta td:first-child{width:210px;color:#8fa6c6;text-transform:uppercase;letter-spacing:.6px;font-size:11.5px}
+
+  /* ---- DOC CONTROL ---- */
+  .docctl{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:20px 26px;margin-top:4px}
+  .docctl h4,.toc h4{margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:1.6px;color:var(--accent);font-weight:700}
+
+  /* ---- HEADINGS (auto-numbered) ---- */
+  .content{counter-reset:sec}
+  h2{counter-increment:sec;font-size:20px;font-weight:700;color:var(--navy2);
+    margin:40px 0 14px;padding-bottom:9px;border-bottom:2px solid var(--accent);
+    display:flex;align-items:baseline;gap:12px;scroll-margin-top:14px}
+  h2::before{content:counter(sec);min-width:30px;height:30px;display:inline-flex;
+    align-items:center;justify-content:center;background:var(--accent);color:#fff;
+    border-radius:5px;font-size:14px;font-weight:700;flex:none;transform:translateY(2px)}
+  h2{counter-reset:sub}
+  h3{counter-increment:sub;font-size:16px;font-weight:700;color:#22334d;margin:24px 0 8px}
+  h3::before{content:counter(sec) "." counter(sub) "  ";color:var(--accent);font-weight:700}
+
+  /* ---- TOC ---- */
+  .toc{border:1px solid var(--line);border-radius:6px;padding:22px 28px;background:#fff}
+  .toc ol{margin:0;padding:0;list-style:none;counter-reset:t;columns:2;column-gap:42px}
+  .toc li{counter-increment:t;margin:5px 0;display:flex;align-items:baseline;font-size:13.5px}
+  .toc li::before{content:counter(t) ".";color:var(--accent);font-weight:700;width:24px;flex:none}
+
+  /* ---- TABLES ---- */
+  table.t{width:100%;border-collapse:collapse;margin:14px 0;font-size:13px}
+  table.t caption{caption-side:top;text-align:left;color:var(--faint);font-size:12px;margin-bottom:6px}
+  table.t th,table.t td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  table.t th{background:var(--navy2);color:#eef3fa;font-weight:600;font-size:12.5px;
+    text-transform:uppercase;letter-spacing:.4px}
+  table.t tr:nth-child(even) td{background:#fafbfd}
+  .id{font-family:Consolas,monospace;font-weight:700;color:var(--accent);white-space:nowrap}
+  .pri{font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;white-space:nowrap}
+  .pri.h{background:#fdecec;color:#b1322b}
+  .pri.m{background:#fff5e6;color:var(--warn)}
+  .pri.l{background:var(--accent-soft);color:var(--accent)}
+  .tag{display:inline-block;background:var(--accent-soft);color:var(--accent);border:1px solid #cfdef2;
+    border-radius:4px;padding:1px 8px;font-size:11.5px;font-weight:700;font-family:Consolas,monospace}
+  .tag.g{background:#e8f5ee;color:var(--ok);border-color:#c4e6d3}
+
+  .note{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 5px 5px 0;margin:14px 0;font-size:13.5px}
+  .note.w{border-color:var(--warn);background:var(--warn-soft)}
+
+  .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+  .role{border:1px solid var(--line);border-radius:6px;padding:16px 18px;background:#fff}
+  .role h4{margin:0 0 6px;font-size:14.5px}
+  .role .who{font-size:12.5px;color:var(--muted);text-align:left}
+
+  /* ---- SIGN-OFF ---- */
+  .sign{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:18px}
+  .sign .box{border:1px solid var(--line);border-radius:6px;padding:18px}
+  .sign .box .r{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--faint)}
+  .sign .box .nm{font-weight:700;margin:4px 0 26px}
+  .sign .box .ln{border-top:1px solid var(--ink);padding-top:5px;font-size:12px;color:var(--muted);
+    display:flex;justify-content:space-between}
+
+  footer{padding:18px 64px;border-top:1px solid var(--line);color:var(--faint);font-size:12px;
+    display:flex;justify-content:space-between}
+
+  @media print{
+    body{background:#fff;font-size:11.5px;color:#000}
+    .page{box-shadow:none;margin:0;max-width:none}
+    .pad{padding:0 16mm}
+    .cover-inner{padding:22mm 16mm}
+    @page{margin:16mm}
+    h2{page-break-after:avoid}
+    table.t,.role,.note,.sign .box,h3{page-break-inside:avoid}
+    a{color:#000}
+  }
+  @media(max-width:680px){.pad{padding:28px 22px}.cover-inner{padding:38px 24px}.toc ol{columns:1}.role-grid,.sign{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ COVER ============ -->
+  <div class="cover">
+    <div class="cover-top"></div>
+    <div class="cover-inner">
+      <div class="cls">Texnik topshiriq · Texnik Zadacha (ТЗ)</div>
+      <h1>«Dasturxon»</h1>
+      <div class="sub">Restoran operatsiyalarini avtomatlashtirish tizimi: backend, web boshqaruv paneli, mobil ilova va QR self-service</div>
+      <div class="rule"></div>
+      <table class="meta">
+        <tr><td>Hujjat raqami</td><td>DSX-TZ-2026-01</td></tr>
+        <tr><td>Versiya</td><td>1.0</td></tr>
+        <tr><td>Sana</td><td>2026-yil 26-may</td></tr>
+        <tr><td>Maxfiylik darajasi</td><td>Ichki foydalanish uchun</td></tr>
+        <tr><td>Buyurtmachi</td><td>Xolmatov Hasanboy G'ayratjon o'g'li</td></tr>
+        <tr><td>Ishlab chiquvchi</td><td>andijanrestoran-byte</td></tr>
+        <tr><td>Hujjat holati</td><td>Tasdiqlash uchun</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="pad content">
+
+    <!-- DOCUMENT CONTROL -->
+    <div class="docctl">
+      <h4>Hujjat nazorati — o'zgarishlar tarixi</h4>
+      <table class="t" style="margin:0">
+        <tr><th>Versiya</th><th>Sana</th><th>Tavsif</th><th>Muallif</th></tr>
+        <tr><td>1.0</td><td>2026-05-26</td><td>Hujjatning birlamchi (boshlang'ich) versiyasi.</td><td>Loyiha jamoasi</td></tr>
+      </table>
+    </div>
+
+    <!-- TOC -->
+    <h2 style="border:0;margin-bottom:8px;padding:0">Mundarija</h2>
+    <div class="toc">
+      <ol>
+        <li><a href="#s1">Umumiy ma'lumotlar</a></li>
+        <li><a href="#s2">Maqsad va vazifalar</a></li>
+        <li><a href="#s3">Atamalar va qisqartmalar</a></li>
+        <li><a href="#s4">Loyiha doirasi</a></li>
+        <li><a href="#s5">Foydalanuvchi rollari</a></li>
+        <li><a href="#s6">Funksional talablar</a></li>
+        <li><a href="#s7">Ma'lumotlar modeli</a></li>
+        <li><a href="#s8">Texnik talablar va arxitektura</a></li>
+        <li><a href="#s9">Nofunksional talablar</a></li>
+        <li><a href="#s10">Interfeys va dizayn talablari</a></li>
+        <li><a href="#s11">Cheklovlar va taxminlar</a></li>
+        <li><a href="#s12">Rivojlantirish rejasi</a></li>
+      </ol>
+    </div>
+
+    <h2 id="s1">Umumiy ma'lumotlar</h2>
+    <p>Ushbu texnik topshiriq <b>«Dasturxon»</b> dasturiy tizimiga qo'yiladigan talablarni belgilaydi. «Dasturxon» — restoran (oshxona/kafe) kundalik operatsiyalarini avtomatlashtirishga mo'ljallangan yaxlit tizim bo'lib, to'rt turdagi foydalanuvchini — <b>direktor</b>, <b>kassir</b>, <b>ofitsant</b> va <b>mijoz</b> — yagona backend va ma'lumotlar bazasi atrofida birlashtiradi.</p>
+    <p>Tizim quyidagi o'zaro bog'liq komponentlardan tashkil topadi:</p>
+    <table class="t">
+      <tr><th>Komponent</th><th>Vazifasi</th><th>Texnologiya</th></tr>
+      <tr><td>Backend (markaziy server)</td><td>Biznes-mantiq, ma'lumotlar bazasi, REST xizmatlari</td><td>Django 6 + DRF</td></tr>
+      <tr><td>Web boshqaruv paneli</td><td>Kassir va direktorning asosiy ish joyi</td><td>Django shablonlari (server-rendered)</td></tr>
+      <tr><td>Mobil ilova</td><td>Ofitsant/direktor uchun buyurtma olish</td><td>Flutter</td></tr>
+      <tr><td>Mijoz veb sahifasi</td><td>QR orqali o'z-o'ziga xizmat menyusi (autentifikatsiyasiz)</td><td>Django (public)</td></tr>
+    </table>
+
+    <h2 id="s2">Maqsad va vazifalar</h2>
+    <p><b>Asosiy maqsad.</b> Restoranda buyurtma qabul qilish, oshxonaga uzatish, to'lovni rasmiylashtirish va moliyaviy hisobotlarni shakllantirish jarayonlarini to'liq raqamlashtirish hamda inson omilidan kelib chiqadigan xatolarni kamaytirish.</p>
+    <p><b>Vazifalar:</b></p>
+    <ul>
+      <li>ofitsant va mijozdan buyurtmalarni real vaqtda qabul qilish;</li>
+      <li>buyurtmalarni avtomatik ravishda oshxonaga (printerga) yo'naltirish;</li>
+      <li>bitta stolda bir nechta mustaqil hisob (multi-bill) yuritish;</li>
+      <li>kunlik portsiya (taom qoldig'i) hisobini yuritish;</li>
+      <li>naqd va karta to'lovlarini qayd etish hamda hisobni yopish;</li>
+      <li>direktorga kunlik/haftalik/oylik tushum va xodimlar unumdorligi bo'yicha hisobot taqdim etish;</li>
+      <li>QR orqali mijozga o'z-o'ziga xizmat ko'rsatish imkonini berish.</li>
+    </ul>
+
+    <h2 id="s3">Atamalar va qisqartmalar</h2>
+    <table class="t">
+      <tr><th>Atama</th><th>Izoh</th></tr>
+      <tr><td><b>Smena (Shift)</b></td><td>Bir kunlik ish davri. Smena ochilmaguncha buyurtma qabul qilish va portsiya kiritish bloklanadi.</td></tr>
+      <tr><td><b>Shot (bill_number)</b></td><td>Bitta stoldagi mustaqil hisob raqami (1–10). Bir stolga 10 tagacha alohida hisob.</td></tr>
+      <tr><td><b>Portsiya</b></td><td>Taomning shu kunga belgilangan miqdori; iste'mol qilingani avtomatik ayriladi.</td></tr>
+      <tr><td><b>is_rejectable</b></td><td>Taomni rad etish mumkinligi belgisi. Qiymati <code>False</code> bo'lsa, taom rad etilmaydi.</td></tr>
+      <tr><td><b>Oshxona konsoli</b></td><td>Oshxona printeriga ulangan kompyuterda ochiq turuvchi, cheklarni avtomatik chop etuvchi sahifa.</td></tr>
+      <tr><td><b>QR self-service</b></td><td>Mijozning telefon orqali QR-kodni skanerlab, menyu ko'rishi va buyurtma berishi.</td></tr>
+      <tr><td>RBAC</td><td>Rolga asoslangan kirish nazorati (Role-Based Access Control).</td></tr>
+      <tr><td>DRF / JWT</td><td>Django REST Framework / JSON Web Token.</td></tr>
+    </table>
+
+    <h2 id="s4">Loyiha doirasi</h2>
+    <h3>Tizimga kiritiladi</h3>
+    <ul>
+      <li>autentifikatsiya (web — sessiya, mobil/tashqi klient — JWT) va rolga asoslangan kirish nazorati;</li>
+      <li>menyu va kategoriyalarni boshqarish (CRUD), kunlik portsiya hisobi;</li>
+      <li>stollar, QR-kodlar va multi-bill hisoblar;</li>
+      <li>buyurtma qabul qilish (ofitsant mobil + mijoz QR) va avtomatik ACCEPTED holati;</li>
+      <li>oshxona konsoli orqali avtomatik chek chop etish;</li>
+      <li>smena boshqaruvi va gating mantiq;</li>
+      <li>to'lov (naqd/karta) va hisobni yopish;</li>
+      <li>moliyaviy hisobotlar va boshqaruv paneli (dashboard).</li>
+    </ul>
+    <h3>Tizimga kiritilmaydi (joriy versiyada)</h3>
+    <ul>
+      <li>onlayn to'lov shlyuzlari (Click, Payme va h.k.) bilan integratsiya;</li>
+      <li>ombor/ta'minot (inventarizatsiya) to'liq moduli;</li>
+      <li>sodiqlik (loyalty) dasturi va chegirma kartalari;</li>
+      <li>bir nechta filial (multi-branch) boshqaruvi.</li>
+    </ul>
+
+    <h2 id="s5">Foydalanuvchi rollari</h2>
+    <div class="role-grid">
+      <div class="role"><h4>Direktor <span class="tag g">director</span></h4><div class="who">To'liq nazorat: xodimlar (ofitsant) CRUD, moliyaviy hisobotlar, naqd/karta savdolari. Web panelga kassir bilan teng huquqda kira oladi.</div></div>
+      <div class="role"><h4>Kassir <span class="tag g">cashier</span></h4><div class="who">Web paneldagi asosiy ish o'rni: smena, menyu va portsiya, buyurtmalar, stollar, hisobni yopish va to'lov, oshxona konsoli.</div></div>
+      <div class="role"><h4>Ofitsant <span class="tag g">waiter</span></h4><div class="who">Mobil ilova orqali stolga birikadi va buyurtma oladi (stol + shot). Buyurtmasi avtomatik ACCEPTED bo'ladi.</div></div>
+      <div class="role"><h4>Mijoz <span class="tag">public</span></h4><div class="who">Autentifikatsiyasiz. QR orqali menyuni ko'radi, savat to'ldiradi, buyurtma beradi va holatini kuzatadi.</div></div>
+    </div>
+
+    <h2 id="s6">Funksional talablar</h2>
+    <p class="lead">Har bir talab noyob identifikator bilan belgilangan. Prioritet: <span class="pri h">Yuqori</span> <span class="pri m">O'rta</span> <span class="pri l">Past</span>.</p>
+
+    <h3>Autentifikatsiya va avtorizatsiya</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th><th style="width:96px">Prioritet</th></tr>
+      <tr><td class="id">FR-AUTH-01</td><td>Web foydalanuvchi sessiya orqali, mobil/tashqi klient esa JWT (Bearer token) orqali kirishi shart.</td><td><span class="pri h">Yuqori</span></td></tr>
+      <tr><td class="id">FR-AUTH-02</td><td>Kirish jarayoni login va parolni qabul qilib, foydalanuvchini roli bilan birga aniqlashi kerak.</td><td><span class="pri h">Yuqori</span></td></tr>
+      <tr><td class="id">FR-AUTH-03</td><td>Har bir amal foydalanuvchi roliga qarab cheklanishi (RBAC) shart: <code>director</code>, <code>cashier</code>, <code>waiter</code>.</td><td><span class="pri h">Yuqori</span></td></tr>
+      <tr><td class="id">FR-AUTH-04</td><td>Tizim sessiya/token muddati tugaganda foydalanuvchini qayta kirishga yo'naltirishi kerak.</td><td><span class="pri m">O'rta</span></td></tr>
+    </table>
+
+    <h3>Direktor moduli</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th></tr>
+      <tr><td class="id">FR-DIR-01</td><td>Ofitsantlar ustida CRUD (yaratish / tahrirlash / o'chirish).</td></tr>
+      <tr><td class="id">FR-DIR-02</td><td>Kunlik / haftalik / oylik tushum hisobotlari.</td></tr>
+      <tr><td class="id">FR-DIR-03</td><td>Ofitsantlar unumdorligi hisoboti (kim qancha sotgan, qaysi taomlar).</td></tr>
+      <tr><td class="id">FR-DIR-04</td><td>Naqd va karta savdolari to'lov yozuvlaridan avtomatik agregatlanadi va boshqaruv panelida aks etadi.</td></tr>
+    </table>
+
+    <h3>Kassir moduli (web panel)</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th></tr>
+      <tr><td class="id">FR-CASH-01</td><td>Boshqaruv paneli — barcha bo'limlarga yagona kirish nuqtasi.</td></tr>
+      <tr><td class="id">FR-CASH-02</td><td>Buyurtmalar ro'yxati — faqat faol buyurtmalar karta ko'rinishida (Stol №N, summa, ofitsant, mahsulot soni).</td></tr>
+      <tr><td class="id">FR-CASH-03</td><td>Buyurtma tafsiloti — alohida pozitsiyani rad etish; <code>is_rejectable=False</code> taom rad etilmaydi (bloklanadi).</td></tr>
+      <tr><td class="id">FR-CASH-04</td><td>Stollar ekrani — har bir stol va faol hisoblar, 20 soniyada avtomatik yangilanadi.</td></tr>
+      <tr><td class="id">FR-CASH-05</td><td>Stol hisobi — shot bo'yicha; "Hisobni yopish" / "Hammasini yopish" amali to'lov modalini chaqiradi.</td></tr>
+      <tr><td class="id">FR-CASH-06</td><td>Stollar QR ekrani — barcha stollar QR rasmlari, chop etish va alohida yuklab olish.</td></tr>
+      <tr><td class="id">FR-CASH-07</td><td>Xodimlar ekrani — ofitsant ro'yxati, qo'shish, o'chirish.</td></tr>
+    </table>
+
+    <h3>Ofitsant moduli (mobil ilova)</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th></tr>
+      <tr><td class="id">FR-WAIT-01</td><td>Ofitsant stolga birikadi va buyurtma oladi (stol + shot raqami 1–10).</td></tr>
+      <tr><td class="id">FR-WAIT-02</td><td>Ofitsant buyurtmasi avtomatik <code>Accepted</code> bo'ladi (kassir tasdiqlashi talab etilmaydi).</td></tr>
+      <tr><td class="id">FR-WAIT-03</td><td>Menyuda har taom uchun qolgan porsiya ko'rsatiladi; tugaganda "Tugadi" deb belgilanadi va tanlash bloklanadi.</td></tr>
+      <tr><td class="id">FR-WAIT-04</td><td>"Rad etilmaydi" belgisi tegishli taomlarda ko'rsatiladi.</td></tr>
+    </table>
+
+    <h3>Mijoz moduli (QR self-service, autentifikatsiyasiz)</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th></tr>
+      <tr><td class="id">FR-CLNT-01</td><td>QR orqali mobil menyu: kategoriya tablari, narx, portsiya, "Rad etilmaydi" belgisi, savat (+/−) va buyurtma berish (ism + izoh).</td></tr>
+      <tr><td class="id">FR-CLNT-02</td><td>Tugagan taom ko'rsatiladi, ammo tanlab bo'lmaydi.</td></tr>
+      <tr><td class="id">FR-CLNT-03</td><td>Buyurtma holatini kuzatish (avtomatik yangilanish), har pozitsiya holati va jami summa.</td></tr>
+      <tr><td class="id">FR-CLNT-04</td><td>Mijoz rad etiluvchi taomni rad etishi mumkin; portsiya qaytariladi; barchasi rad etilsa buyurtma bekor qilinadi.</td></tr>
+    </table>
+
+    <h3>Oshxona konsoli</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th></tr>
+      <tr><td class="id">FR-KIT-01</td><td>Oshxona konsoli sahifasi printer ulangan kompyuterda ochiq qoladi va davriy ravishda (~8 s) yangi buyurtmalarni tekshiradi.</td></tr>
+      <tr><td class="id">FR-KIT-02</td><td>Yangi (qabul qilingan) buyurtma cheki avtomatik chop etiladi.</td></tr>
+      <tr><td class="id">FR-KIT-03</td><td>Takror chop etishning oldi olinadi: <code>kitchen_printed</code> bayrog'i va atomik "claim" mexanizmi.</td></tr>
+    </table>
+
+    <h3>Smena tizimi</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th></tr>
+      <tr><td class="id">FR-SHIFT-01</td><td>Kassir smenani boshlaydi. Bir vaqtning o'zida bitta ochiq smena bo'ladi; smenani yopib, o'sha kun ichida qaytadan ochish mumkin.</td></tr>
+      <tr><td class="id">FR-SHIFT-05</td><td>Kassir/direktor smenani yopadi (<code>closed_at</code>, <code>closed_by</code> qayd etiladi). Yopilgach buyurtma qabul qilinmaydi va portsiya kiritilmaydi.</td></tr>
+      <tr><td class="id">FR-SHIFT-02</td><td>Smena ochilmaguncha buyurtma qabul qilib bo'lmaydi (web va API darajasida bloklanadi).</td></tr>
+      <tr><td class="id">FR-SHIFT-03</td><td>Smena ochilmaguncha kunlik portsiya kiritib bo'lmaydi.</td></tr>
+      <tr><td class="id">FR-SHIFT-04</td><td>Smena ochilgach kategoriya tablari bo'yicha portsiya jadvali ko'rsatiladi; qolgan = boshlang'ich − iste'mol.</td></tr>
+    </table>
+
+    <h3>Menyu va portsiya boshqaruvi</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th></tr>
+      <tr><td class="id">FR-MENU-01</td><td>Taomlar to'liq CRUD: nom, kategoriya, narx, tavsif, faol/nofaol, "Rad etish mumkin" belgisi.</td></tr>
+      <tr><td class="id">FR-MENU-02</td><td>Kategoriyalar CRUD va kategoriya bo'yicha guruhlash.</td></tr>
+      <tr><td class="id">FR-MENU-03</td><td>Kunlik portsiya jadvali: har taom uchun boshlang'ich va qolgan miqdor.</td></tr>
+    </table>
+
+    <h3>To'lov va hisobni yopish</h3>
+    <table class="t">
+      <tr><th style="width:120px">ID</th><th>Talab</th></tr>
+      <tr><td class="id">FR-PAY-01</td><td>Hisob yopilganda Naqd / Karta tanlash modali chiqadi.</td></tr>
+      <tr><td class="id">FR-PAY-02</td><td>Tanlangach har buyurtma uchun to'lov yozuvi yaratiladi (summa va kassir qayd etiladi).</td></tr>
+      <tr><td class="id">FR-PAY-03</td><td>Buyurtma COMPLETED holatiga o'tadi va chek avtomatik chiqadi; chekda to'lov turi ko'rsatiladi.</td></tr>
+    </table>
+
+    <h2 id="s7">Ma'lumotlar modeli</h2>
+    <p class="lead">Asosiy entitilar (modellar) va ularning kalit maydonlari.</p>
+    <table class="t">
+      <tr><th style="width:160px">Model</th><th>Asosiy maydonlar</th></tr>
+      <tr><td><b>DiningTable</b></td><td><code>qr_token</code>, <code>assigned_waiters</code>, <code>current_status</code></td></tr>
+      <tr><td><b>Order</b></td><td><code>bill_number</code> (1–10), <code>status</code>, <code>order_source</code> (waiter/client), <code>client_name</code>, <code>public_token</code>, <code>total_amount</code>, <code>payable_amount</code>, <code>kitchen_printed</code></td></tr>
+      <tr><td><b>OrderItem</b></td><td><code>product</code>, <code>quantity</code>, <code>status</code> (pending/accepted/rejected), <code>rejection_reason</code>, <code>line_total</code></td></tr>
+      <tr><td><b>Product</b></td><td><code>price</code>, <code>is_active</code>, <code>is_rejectable</code>, <code>image</code>, qolgan portsiya hisobi</td></tr>
+      <tr><td><b>MenuCategory</b></td><td><code>name</code>, <code>sort_order</code></td></tr>
+      <tr><td><b>ProductDailyStock</b></td><td>(<code>product</code>, <code>date</code>) noyob, <code>initial_quantity</code>, <code>remaining_quantity</code></td></tr>
+      <tr><td><b>Shift</b></td><td><code>date</code>, <code>opened_by</code>, <code>opened_at</code>, <code>closed_by</code>, <code>closed_at</code> (ochiqligi <code>closed_at</code> bilan aniqlanadi)</td></tr>
+      <tr><td><b>Payment</b></td><td><code>order</code> (1:1), <code>payment_method</code> (cash/card/mixed), <code>amount</code>, <code>cashier</code></td></tr>
+    </table>
+
+    <h2 id="s8">Texnik talablar va arxitektura</h2>
+    <table class="t">
+      <tr><th style="width:210px">Qatlam / yo'nalish</th><th>Texnologiya va talab</th></tr>
+      <tr><td>Backend freymvork</td><td>Python, <b>Django 6</b> + Django REST Framework</td></tr>
+      <tr><td>API autentifikatsiya</td><td>JWT (<code>djangorestframework-simplejwt</code>)</td></tr>
+      <tr><td>API hujjatlari</td><td><code>drf-spectacular</code> (OpenAPI)</td></tr>
+      <tr><td>CORS</td><td><code>django-cors-headers</code></td></tr>
+      <tr><td>Ma'lumotlar bazasi</td><td>Ishlab chiqishda SQLite, produksiyada PostgreSQL (<code>psycopg</code>, <code>dj-database-url</code>)</td></tr>
+      <tr><td>Web panel</td><td>Django shablonlari (server-rendered), zamonaviy SaaS dizayn</td></tr>
+      <tr><td>Mobil ilova</td><td>Flutter (Dart)</td></tr>
+      <tr><td>QR generatsiya</td><td><code>qrcode</code>, <code>Pillow</code></td></tr>
+      <tr><td>Statik fayllar / server</td><td><code>whitenoise</code>, <code>gunicorn</code></td></tr>
+      <tr><td>Joylashtirish (deploy)</td><td>Railway yoki muqobil platforma; <code>migrate → collectstatic → gunicorn</code></td></tr>
+    </table>
+
+    <h2 id="s9">Nofunksional talablar</h2>
+    <table class="t">
+      <tr><th style="width:90px">ID</th><th style="width:150px">Kategoriya</th><th>Talab</th></tr>
+      <tr><td class="id">NFR-01</td><td>Xavfsizlik</td><td>RBAC; JWT bilan himoyalangan API; parollar standart usulda xeshlanadi; CSRF va CORS sozlamalari to'g'ri qo'yilgan.</td></tr>
+      <tr><td class="id">NFR-02</td><td>Ma'lumot yaxlitligi</td><td>To'lov va portsiya kamayishi atomik (race condition'siz); oshxona chop etish atomik "claim".</td></tr>
+      <tr><td class="id">NFR-03</td><td>Real vaqtlilik</td><td>Oshxona ~8 s, stollar ~20 s, mijoz holati ~15 s da yangilanadi.</td></tr>
+      <tr><td class="id">NFR-04</td><td>Qulaylik</td><td>Web panel responsive va zamonaviy; mobil ilova sodda va tez.</td></tr>
+      <tr><td class="id">NFR-05</td><td>Chop etish</td><td>Chek va QR sahifalari printer uchun oq fonli.</td></tr>
+      <tr><td class="id">NFR-06</td><td>Ishonchlilik</td><td>O'zgarishlardan keyin smoke testlar; loyiha "check" bosqichidan toza o'tadi.</td></tr>
+      <tr><td class="id">NFR-07</td><td>Tillilik</td><td>Foydalanuvchi interfeysi o'zbek tilida.</td></tr>
+    </table>
+
+    <h2 id="s10">Interfeys va dizayn talablari</h2>
+    <ul>
+      <li><b>Web panel:</b> zamonaviy SaaS tema — Manrope shrifti, neon-lime accent rang, ikonali sidebar va guruhlangan navigatsiya.</li>
+      <li><b>Buyurtmalar:</b> texnik identifikatorlar o'rniga foydalanuvchiga tushunarli "Stol №N" ko'rinishi.</li>
+      <li><b>Holat indikatorlari:</b> tugagan taom kulrang "Tugadi"; "Rad etilmaydi" — alohida belgi.</li>
+      <li><b>Mobil ilova:</b> Flutter; statik tahlildan (analyze) toza o'tadi; har taomda qolgan portsiya va rad etish belgisi ko'rsatiladi.</li>
+    </ul>
+
+    <h2 id="s11">Cheklovlar va taxminlar</h2>
+    <ul>
+      <li>bir stolga maksimal 10 ta mustaqil hisob (shot);</li>
+      <li>bir vaqtda bitta ochiq smena bo'ladi; smenani yopib o'sha kun ichida qayta ochish mumkin (smenani yopish funksiyasi mavjud);</li>
+      <li>oshxona konsoli ishlashi uchun tegishli kompyuterda sahifa doimo ochiq turishi shart;</li>
+      <li>ofitsant va mijoz buyurtmalari avtomatik ACCEPTED bo'ladi (qo'lda qabul qilish talab etilmaydi).</li>
+    </ul>
+    <div class="note w">
+      <b>Xavfsizlik eslatmasi.</b> Git remote URL'da GitHub kirish tokeni (PAT) ochiq qolmasligi kerak — tokenni yangilab, SSH yoki credential manager orqali saqlash tavsiya etiladi.
+    </div>
+
+    <h2 id="s12">Rivojlantirish rejasi</h2>
+    <ul>
+      <li>direktor uchun naqd/karta savdolarini alohida web sahifada ko'rsatish;</li>
+      <li>mijoz sahifasiga "savatni tozalash" va miqdorni aniq ko'rsatish;</li>
+      <li>real qurilmada to'liq oqimni (mijoz → kassir) sinovdan o'tkazish;</li>
+      <li>kelajakda onlayn to'lov shlyuzlari bilan integratsiya.</li>
+    </ul>
+
+    <!-- SIGN-OFF -->
+    <h2 style="border-bottom-color:var(--line)">Tasdiqlash</h2>
+    <p class="lead">Ushbu texnik topshiriq tomonlar tomonidan ko'rib chiqilib, kelishilgan holda tasdiqlanadi.</p>
+    <div class="sign">
+      <div class="box">
+        <div class="r">Buyurtmachi</div>
+        <div class="nm">Xolmatov Hasanboy G'ayratjon o'g'li</div>
+        <div class="ln"><span>Imzo</span><span>Sana: ____________</span></div>
+      </div>
+      <div class="box">
+        <div class="r">Ishlab chiquvchi</div>
+        <div class="nm">andijanrestoran-byte</div>
+        <div class="ln"><span>Imzo</span><span>Sana: ____________</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span>«Dasturxon» — Texnik topshiriq · DSX-TZ-2026-01 · v1.0</span>
+    <span>Ichki foydalanish uchun · 2026-05-26</span>
+  </footer>
+</div>
+</body>
+</html>

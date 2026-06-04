@@ -34,7 +34,7 @@ from .api_serializers import (
     serialize_order,
     waiter_user_payload,
 )
-from .models import DiningTable, MenuCategory, Order, OrderItem, Payment, Product, ProductDailyStock, UserProfile, Waiter
+from .models import DiningTable, MenuCategory, Order, OrderItem, Payment, Product, ProductDailyStock, Shift, UserProfile, Waiter
 from .services import ACTIVE_ORDER_STATUSES, order_payable_total
 
 User = get_user_model()
@@ -330,6 +330,14 @@ class OrdersListCreateView(APIView):
         profile = ensure_profile(request.user)
         if not profile or profile.role != UserProfile.Role.WAITER:
             return Response({"detail": "Faqat waiter order yarata oladi."}, status=status.HTTP_403_FORBIDDEN)
+
+        # Smena ochiq bo'lmasa ofitsant buyurtma yubora olmaydi —
+        # kassir avval smenani boshlashi kerak.
+        if not Shift.is_open():
+            return Response(
+                {"detail": "Smena ochilmagan. Avval kassir smenani boshlashi kerak."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         serializer = CreateOrderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

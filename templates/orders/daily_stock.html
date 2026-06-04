@@ -37,7 +37,7 @@
             </div>
         {% else %}
             <div class="surface content-panel">
-                <div class="section-title">
+                <div class="section-title" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
                     <div>
                         <h2>Bugungi sig'im jadvali</h2>
                         <p class="support-text">
@@ -46,6 +46,11 @@
                             Bo'sh maydon = cheksiz.
                         </p>
                     </div>
+                    <form method="post" action="{% url 'orders:close_shift' %}"
+                          onsubmit="return confirm('Smenani yopasizmi? Yopilgach buyurtma qabul qilinmaydi va portsiya kiritilmaydi. Yangi smena boshlash uchun qaytadan ochishingiz kerak bo\'ladi.');">
+                        {% csrf_token %}
+                        <button class="btn danger" type="submit">Smenani yopish</button>
+                    </form>
                 </div>
 
                 {% if groups %}

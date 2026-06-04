@@ -34,3 +34,6 @@ htmlcov/
 
 # Env
 .env
+
+# Local Netlify folder
+.netlify

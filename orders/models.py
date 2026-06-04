@@ -340,23 +340,43 @@ class Shift(models.Model):
     """Kassir kunlik smenasi. Smena ochilmaguncha buyurtma qabul
     qilinmaydi va kunlik portsiya kiritilmaydi."""
 
-    date = models.DateField(unique=True, default=timezone.localdate)
+    # Bir kun ichida smena ochilib-yopilib, qayta ochilishi mumkin —
+    # shuning uchun `date` unique EMAS. Ochiqligi closed_at bilan aniqlanadi.
+    date = models.DateField(default=timezone.localdate)
     opened_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="opened_shifts",
     )
     opened_at = models.DateTimeField(auto_now_add=True)
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="closed_shifts",
+        null=True,
+        blank=True,
+    )
+    closed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        ordering = ["-date"]
+        ordering = ["-opened_at"]
         verbose_name = "Smena"
         verbose_name_plural = "Smenalar"
 
     def __str__(self) -> str:
-        return f"Smena {self.date}"
+        holat = "yopiq" if self.closed_at else "ochiq"
+        return f"Smena {self.date} ({holat})"
+
+    @classmethod
+    def current(cls, day=None):
+        """Bugungi ochiq (yopilmagan) smenani qaytaradi, bo'lmasa None."""
+        day = day or timezone.localdate()
+        return (
+            cls.objects.filter(date=day, closed_at__isnull=True)
+            .order_by("-opened_at")
+            .first()
+        )
 
     @classmethod
     def is_open(cls, day=None) -> bool:
-        day = day or timezone.localdate()
-        return cls.objects.filter(date=day).exists()
+        return cls.current(day) is not None

@@ -1,5 +1,5 @@
 DASTURXON LOYIHASI — HOLAT VA MAQSAD
-Oxirgi yangilangan: 2026-06-03
+Oxirgi yangilangan: 2026-06-04
 
 ====================================================================
 0. REPOLAR VA JOYLASHUV
@@ -56,10 +56,14 @@ chiqadi (Oshxona konsoli orqali).
 - OSHXONA: /oshxona/  — oshxona printeriga ulangan kompyuterda ochiq
   qoldiriladi. Har 8s yangi buyurtma chekini avtomatik chop etadi
   (Order.kitchen_printed bilan atomik claim, takror oldini oladi).
-- SMENA: /smena/  — "Smenani boshlash". Smena ochilmaguncha buyurtma
-  QABUL QILIB BO'LMAYDI va kunlik PORTSIYA kiritib bo'lmaydi.
+- SMENA: /smena/  — "Smenani boshlash" / "Smenani yopish". Smena
+  ochilmaguncha buyurtma QABUL QILIB BO'LMAYDI (ofitsant API va mijoz QR
+  ham bloklanadi) va kunlik PORTSIYA kiritib bo'lmaydi.
   Ochilgach: kategoriya tablari bo'yicha portsiya jadvali. Iste'mol
   saqlanadi (qolgan = yangi_boshlang'ich − iste'mol).
+  YANGI: smenani YOPISH bor (closed_at/closed_by). Yopilgach buyurtma
+  qabul qilinmaydi; bir kun ichida yopib qayta ochish mumkin (date unique
+  emas, ochiqligi closed_at bilan aniqlanadi — Shift.current()).
 - MENYU: /menu/  — to'liq CRUD (nom, kategoriya, narx, tavsif, faol,
   "Rad etish mumkin"). Kategoriya tablari bo'yicha.
 - BUYURTMALAR: /orders/  — faqat faol; karta ko'rinishi.
@@ -117,7 +121,9 @@ chiqadi (Oshxona konsoli orqali).
 - Product     : price, is_active, is_rejectable, image, get_today_remaining().
 - MenuCategory: name, sort_order.
 - ProductDailyStock : (product,date) unique, initial/remaining_quantity.
-- Shift       : date unique, opened_by, opened_at. Shift.is_open(day).
+- Shift       : date (unique EMAS), opened_by, opened_at, closed_by,
+                closed_at. Shift.current(day) -> ochiq smena yoki None;
+                Shift.is_open(day) -> current() is not None.
 - Payment     : order(1:1), payment_method(cash/card/mixed), amount, cashier.
 
 ====================================================================
@@ -136,18 +142,28 @@ chiqadi (Oshxona konsoli orqali).
       (build_avatar_url helper, to'liq URL uchun serializer'ga request context).
 - Media (mahsulot rasmi): /media/ DEBUG=False bo'lganda ham xizmat qilinadi
   (config/urls.py'da re_path serve). Eslatma: disk efemer.
-- Migratsiyalar: oxirgisi 0017_remove_userprofile_avatar_and_more
-  (0016 avatar ImageField qo'shgan -> 0017 uni o'chirib avatar_data/
-  content_type/updated_at BinaryField maydonlarni qo'shgan). Chiziqli,
-  prod tarixiga mos (yetim ustun yo'q).
-- `python manage.py check` toza. Testlar: 34 ta, hammasi o'tadi
+- Migratsiyalar: oxirgisi 0018_alter_shift_options_shift_closed_at_...
+  (Shift'ga closed_at/closed_by qo'shgan, date'dan unique olib tashlagan).
+  0017 avatar_data/content_type/updated_at BinaryField qo'shgan edi.
+  Chiziqli, prod tarixiga mos (yetim ustun yo'q).
+- `python manage.py check` toza. Testlar: 45 ta, hammasi o'tadi
   (orders/tests.py — auth, buyurtma sikli, to'lov, QR self-service, sig'im,
-  har mijoz alohida shot, direktor stolда ofitsant avatar_url bilan).
+  har mijoz alohida shot, direktor stolда ofitsant avatar_url, hamda
+  smena hayot-sikli: ochish/yopish/qayta ochish + buyurtma gating).
 - Flutter: `flutter analyze` toza. Paketlar: image_picker, http qo'shildi.
   Release APK: build\app\outputs\flutter-apk\app-release.apk (~49 MB).
 
 ====================================================================
-5. SHU SESSIYADAGI ASOSIY ISHLAR (2026-06-03)
+5. SHU SESSIYADAGI ASOSIY ISHLAR (2026-06-04)
+====================================================================
+- (Yangi) SMENANI YOPISH funksiyasi yakunlandi: model (closed_at/closed_by,
+  date unique emas, Shift.current()), web view close_shift + /smena/close/,
+  daily_stock'da "Smenani yopish" tugmasi, ofitsant API va mijoz QR uchun
+  smena-yopiq gating. Migratsiya 0018 qo'llandi. 11 ta yangi test yozildi,
+  smena-gating tufayli buzilgan 6+2 ta eski test smenani ochib tuzatildi
+  (jami 45 test o'tadi).
+
+SHU SESSIYADAGI ASOSIY ISHLAR (2026-06-03)
 ====================================================================
 - (Tuzatish) Ofitsant buyurtma yuborishda xato: ilova eski build'da
   "order_items" yuborar edi, server "items" kutadi -> 400. Manba allaqachon
@@ -173,8 +189,10 @@ chiqadi (Oshxona konsoli orqali).
 - (Eslatma) Railway disk efemer: mahsulot rasmlari (/media/products/)
   redeploy'da yo'qolishi mumkin. Avatar bazada (xavfsiz). Doimiy media
   kerak bo'lsa S3/Cloudinary ulash kerak.
-- (Eslatma) Smena yopish funksiyasi yo'q (faqat ochish) — kun bo'yi bitta
-  smena. Kerak bo'lsa Shift'ga closed_at qo'shiladi.
+- (BAJARILDI) Smena yopish funksiyasi qo'shildi: /smena/close/ (kassir/
+  direktor), Shift.closed_at/closed_by, Shift.current(). Bir kun ichida
+  yopib qayta ochish mumkin. Buyurtma gating (ofitsant API + mijoz QR)
+  smena yopiq bo'lsa 400 qaytaradi. Testlar bilan qoplangan.
 - (Xavfsizlik) git remote URL'da GitHub PAT bo'lishi mumkin — SSH/credential
   manager'ga o'tkazish tavsiya etiladi.
 - (Test) Yangi APK'ni telefonga o'rnatib (eski ilovani o'chirib), real

@@ -32,6 +32,7 @@ urlpatterns = [
     # ── Smena boshlash — kunlik portsiya (web) ──
     path("smena/", views.daily_stock, name="daily_stock"),
     path("smena/start/", views.start_shift, name="start_shift"),
+    path("smena/close/", views.close_shift, name="close_shift"),
     path("smena/save/", views.daily_stock_save, name="daily_stock_save"),
 
     # ── Stollar QR kodlari (panel) ──

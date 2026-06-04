@@ -427,6 +427,12 @@ class PublicClientOrderView(APIView):
 
     def post(self, request, qr_token):
         table = get_object_or_404(DiningTable, qr_token=qr_token)
+        # Smena yopiq bo'lsa mijoz QR orqali ham buyurtma bera olmaydi.
+        if not Shift.is_open():
+            return Response(
+                {"detail": "Hozircha buyurtma qabul qilinmayapti. Iltimos, ofitsantni chaqiring."},
+                status=400,
+            )
         serializer = ClientOrderSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         d = serializer.validated_data

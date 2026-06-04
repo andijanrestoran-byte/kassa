@@ -544,13 +544,27 @@ def daily_stock_save(request: HttpRequest):
 @login_required
 def start_shift(request: HttpRequest):
     """Bugungi smenani ochish. Shundan keyingina buyurtma qabul
-    qilinadi va portsiya kiritiladi."""
+    qilinadi va portsiya kiritiladi. Ochiq smena bo'lsa qaytadan
+    yaratilmaydi (avval yopish kerak)."""
     if not _is_manager(request):
         return HttpResponseBadRequest("Ruxsat berilmagan")
-    Shift.objects.get_or_create(
-        date=timezone.localdate(),
-        defaults={"opened_by": request.user},
-    )
+    if not Shift.is_open():
+        Shift.objects.create(opened_by=request.user)
+    return redirect("orders:daily_stock")
+
+
+@require_POST
+@login_required
+def close_shift(request: HttpRequest):
+    """Ochiq smenani yopish. Yopilgach buyurtma qabul qilinmaydi va
+    portsiya kiritilmaydi; "Smenani boshlash" tugmasi yana faollashadi."""
+    if not _is_manager(request):
+        return HttpResponseBadRequest("Ruxsat berilmagan")
+    shift = Shift.current()
+    if shift:
+        shift.closed_by = request.user
+        shift.closed_at = timezone.now()
+        shift.save(update_fields=["closed_by", "closed_at"])
     return redirect("orders:daily_stock")
 
 
